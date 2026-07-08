@@ -1,7 +1,7 @@
 """Mean-reversion signals: statistical pairs trading and single-asset z-score.
 
 Pairs trading (the classic stat-arb): find two assets whose *prices* are
-cointegrated — individually they wander (non-stationary), but a linear
+cointegrated - individually they wander (non-stationary), but a linear
 combination (the spread) is stationary and mean-reverting. We:
 
   1. Select the most cointegrated candidate pair via the Engle-Granger test
@@ -11,7 +11,7 @@ combination (the spread) is stationary and mean-reverting. We:
   3. Trade the spread's z-score: enter when |z| > 2 (the spread is stretched),
      exit when it reverts through 0.
   4. Re-test cointegration on a rolling window and STOP trading the pair if the
-     relationship breaks down (p-value > 0.10) — a non-stationary "spread" is
+     relationship breaks down (p-value > 0.10) - a non-stationary "spread" is
      just two correlated random walks and will bankrupt you.
 """
 
@@ -26,29 +26,17 @@ from statsmodels.tsa.stattools import coint
 from ..config import PairsConfig
 
 
-def find_cointegrated_pair(
+def scan_candidate_pairs(
     close: pd.DataFrame,
     candidates: Sequence[Tuple[str, str]],
-    max_pvalue: float = 0.10,
-) -> Optional[Tuple[str, str, float]]:
-    """Return the candidate pair with the lowest Engle-Granger p-value.
+) -> List[Tuple[str, str, float]]:
+    """Engle-Granger p-value for every testable candidate pair.
 
-    Parameters
-    ----------
-    close : pd.DataFrame
-        Close prices containing the candidate tickers.
-    candidates : list[(str, str)]
-        Economically motivated pairs to test (don't data-mine all pairs — that
-        guarantees spurious cointegration by multiple comparisons).
-    max_pvalue : float
-        Reject the best pair if even it exceeds this p-value.
-
-    Returns
-    -------
-    (a, b, pvalue) or None
-        Best cointegrated pair, or None if none qualify / data missing.
+    Returns [(a, b, pvalue), ...] for the candidates whose data is present and
+    long enough. Keeping the whole scan (not just the winner) matters because
+    the number of tests run is an input to the multiple-testing correction.
     """
-    best = None
+    out: List[Tuple[str, str, float]] = []
     for a, b in candidates:
         if a not in close.columns or b not in close.columns:
             continue
@@ -59,9 +47,51 @@ def find_cointegrated_pair(
             _, pvalue, _ = coint(s[a], s[b])
         except Exception:
             continue
-        if best is None or pvalue < best[2]:
-            best = (a, b, float(pvalue))
-    if best is None or best[2] > max_pvalue:
+        out.append((a, b, float(pvalue)))
+    return out
+
+
+def find_cointegrated_pair(
+    close: pd.DataFrame,
+    candidates: Sequence[Tuple[str, str]],
+    max_pvalue: float = 0.10,
+    fdr_alpha: Optional[float] = None,
+) -> Optional[Tuple[str, str, float]]:
+    """Return the candidate pair with the lowest Engle-Granger p-value.
+
+    Parameters
+    ----------
+    close : pd.DataFrame
+        Close prices containing the candidate tickers.
+    candidates : list[(str, str)]
+        Economically motivated pairs to test (don't data-mine all pairs - that
+        guarantees spurious cointegration by multiple comparisons).
+    max_pvalue : float
+        Reject the best pair if even it exceeds this p-value.
+    fdr_alpha : float, optional
+        If set, the winning pair must also survive a Benjamini-Hochberg
+        correction across the whole scan at this false discovery rate. This is
+        the honest version of the test: with several candidates, the smallest
+        raw p-value is partly a selection effect.
+
+    Returns
+    -------
+    (a, b, pvalue) or None
+        Best cointegrated pair, or None if none qualify / data missing.
+    """
+    scanned = scan_candidate_pairs(close, candidates)
+    if not scanned:
+        return None
+
+    if fdr_alpha is not None:
+        from ..performance.multiple_testing import benjamini_hochberg
+        keep = benjamini_hochberg([p for _, _, p in scanned], fdr_alpha)
+        scanned = [pair for pair, k in zip(scanned, keep) if k]
+        if not scanned:
+            return None
+
+    best = min(scanned, key=lambda x: x[2])
+    if best[2] > max_pvalue:
         return None
     return best
 
@@ -163,7 +193,7 @@ def single_asset_reversion(price_data, lookback: int = 21,
     """Single-name mean reversion: fade short-term z-score extremes.
 
     weight_i ∝ -zscore_i (buy what fell, sell what rose), clipped per name and
-    gross-normalised. This is the counterpart to momentum — it profits when
+    gross-normalised. This is the counterpart to momentum - it profits when
     prices over-react and snap back, which is why it tends to do well precisely
     when momentum does badly (the two are natural diversifiers).
     """

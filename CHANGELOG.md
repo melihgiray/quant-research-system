@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.0
+
+- Fixed a one-day label leak in the ML training window: the row dated at the
+  in-sample boundary was labelled with the first out-of-sample day's return.
+  Rows with an unknown next-day return also got a fake "down" label instead of
+  being dropped. A regression test now proves training is identical whether or
+  not post-boundary data exists in the panel.
+- Pair selection is now corrected for multiple testing. The scan reports
+  Benjamini-Hochberg q-values next to raw p-values, and the chosen pair has to
+  survive the correction at the configured false discovery rate.
+- Assorted docstring cleanup.
+
 ## 0.1.0
 
 First working version. A backtesting framework for a few systematic equity

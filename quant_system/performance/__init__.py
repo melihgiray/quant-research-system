@@ -15,6 +15,11 @@ from .bootstrap import (
     bootstrap_summary,
     ConfidenceInterval,
 )
+from .multiple_testing import (
+    benjamini_hochberg,
+    fdr_adjusted_pvalues,
+    fdr_report,
+)
 
 __all__ = [
     "compute_metrics",
@@ -33,4 +38,7 @@ __all__ = [
     "cagr_confidence_interval",
     "bootstrap_summary",
     "ConfidenceInterval",
+    "benjamini_hochberg",
+    "fdr_adjusted_pvalues",
+    "fdr_report",
 ]

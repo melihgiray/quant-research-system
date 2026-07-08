@@ -32,7 +32,8 @@ from .backtest.capacity import sweep_capital, estimate_capacity, plot_capacity, 
 from .regime.detector import detect_regime, market_proxy_returns
 from .regime.switcher import apply_regime_sizing
 from .signals.momentum import cross_sectional_momentum
-from .signals.mean_reversion import find_cointegrated_pair, pairs_signal
+from .signals.mean_reversion import find_cointegrated_pair, pairs_signal, scan_candidate_pairs
+from .performance.multiple_testing import fdr_report, fdr_summary_lines
 from .signals.ml_signal import train_predict, shap_feature_importance
 from .performance.tearsheet import format_tearsheet, save_report_plots
 from .performance.factor_decomp import factor_decomposition
@@ -110,9 +111,17 @@ def run_one_strategy(name: str, pdat, cfg: Config, regime, rf: float,
         signal_label = "Cross-sectional momentum (12-1, monthly)"
         sig_universe = sub
     elif name == "pairs":
-        best = find_cointegrated_pair(pdat.close, PAIRS_CANDIDATES, cfg.pairs.coint_pvalue_max)
+        scanned = scan_candidate_pairs(pdat.close, PAIRS_CANDIDATES)
+        if scanned:
+            report = fdr_report([f"{a}/{b}" for a, b, _ in scanned],
+                                [p for _, _, p in scanned],
+                                alpha=cfg.pairs.coint_pvalue_max)
+            print("\n".join(fdr_summary_lines(report, cfg.pairs.coint_pvalue_max)))
+        best = find_cointegrated_pair(pdat.close, PAIRS_CANDIDATES,
+                                      cfg.pairs.coint_pvalue_max,
+                                      fdr_alpha=cfg.pairs.coint_pvalue_max)
         if best is None:
-            print("[cli] pairs: no cointegrated pair found in candidates — skipping")
+            print("[cli] pairs: no candidate survives the cointegration scan - skipping")
             return None
         a, b, pv = best
         print(f"[cli] pairs: trading {a}/{b} (Engle-Granger p={pv:.2e})")
@@ -147,7 +156,7 @@ def run_one_strategy(name: str, pdat, cfg: Config, regime, rf: float,
     if fd is not None:
         extra += [""] + fd.summary()
     else:
-        extra += ["(factor ETFs unavailable — decomposition skipped)"]
+        extra += ["(factor ETFs unavailable - decomposition skipped)"]
 
     print("\n" + format_tearsheet(returns, turnover, rf_annual=rf,
                                   title=signal_label, extra_lines=extra,
@@ -207,7 +216,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     pdat = load_price_data(tickers, args.start, args.end, cache_dir=cfg.cache_dir,
                            use_synthetic=args.synthetic, seed=cfg.random_seed)
     if pdat.synthetic and not args.synthetic:
-        print("[cli] NOTE: live data unavailable — using SYNTHETIC fallback "
+        print("[cli] NOTE: live data unavailable - using SYNTHETIC fallback "
               "(numbers are illustrative, not live).")
 
     # ---- regime ----

@@ -10,7 +10,8 @@ Done so far is marked `[x]`.
 - [x] Probabilistic and deflated Sharpe ratio, plus minimum track record length.
 - [x] Bootstrap confidence intervals for Sharpe and CAGR.
 - [x] Capacity / cost-sensitivity sweep over capital.
-- [ ] Multiple-testing control (Benjamini-Hochberg) on the pairs and feature search.
+- [x] Multiple-testing control (Benjamini-Hochberg) on the pairs scan.
+- [ ] Extend the FDR control to the ML feature search.
 
 ## Realism and portfolio construction
 - [ ] Better execution: participation cap, next-open fills, partial fills.

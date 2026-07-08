@@ -36,9 +36,11 @@ Around those:
 - The usual performance stats (Sharpe, Sortino, Calmar, drawdown, hit rate,
   turnover, VaR, CVaR), plus a Fama-French three-factor regression to see how much
   of the return is just market, size, and value exposure.
-- A few honesty checks on the Sharpe, because one number oversells. Probabilistic
-  and Deflated Sharpe, bootstrap confidence intervals, and a rough capacity
-  estimate for how much capital the strategy could hold before costs eat it.
+- A few honesty checks, because one number oversells. Probabilistic and Deflated
+  Sharpe, bootstrap confidence intervals, a rough capacity estimate for how much
+  capital the strategy could hold before costs eat it, and a Benjamini-Hochberg
+  correction on the pairs scan so a pair picked from several candidates has to
+  survive the fact that several were tried.
 - Two side tools: a SEC EDGAR filing watcher that can text or call you when a
   company files paperwork to issue new shares, and a small script that asks Claude
   to turn a market snapshot into structured JSON.
