@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "quant-research-system"
-version = "0.1.0"
-description = "A technically-correct quantitative research stack: signals, walk-forward backtesting with realistic costs, regime detection, and factor decomposition."
+version = "0.2.0"
+description = "Backtesting framework for systematic equity strategies, with walk-forward validation and realistic transaction costs."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }

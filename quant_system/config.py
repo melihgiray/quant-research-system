@@ -3,7 +3,7 @@
 Every tunable number in the system lives here so that nothing important is
 buried as a magic constant deep in the code. The config is an *immutable*
 dataclass: the CLI builds one instance and threads it through the call graph.
-That keeps us honest about the "no global mutable state" rule — code reads
+That keeps us honest about the "no global mutable state" rule - code reads
 parameters from a value that was passed in, never from module-level globals.
 
 All windows are expressed in *trading days* (~252/year, ~21/month, ~63/quarter).
@@ -153,7 +153,7 @@ class RiskConfig:
     """Portfolio risk controls and sizing.
 
     target_vol:      annualised volatility target for vol-targeting sizing.
-    max_drawdown:    hard stop — if breached, the engine flattens to cash.
+    max_drawdown:    hard stop - if breached, the engine flattens to cash.
     max_weight:      per-name concentration cap (absolute weight).
     kelly_fraction:  fraction of full-Kelly to use (full Kelly is too aggressive).
     """

@@ -2,7 +2,7 @@
 
 VaR and CVaR are reported as *positive loss* numbers (a 95% VaR of 0.02 means
 "on the worst 5% of days we expect to lose at least 2%"). CVaR (a.k.a. expected
-shortfall) is the average loss *conditional on* breaching VaR — it is coherent
+shortfall) is the average loss *conditional on* breaching VaR - it is coherent
 (sub-additive) where VaR is not, which is why post-2008 regulation moved to it.
 """
 
@@ -43,7 +43,7 @@ def conditional_var(returns: pd.Series, level: float = 0.95) -> float:
 
 
 def parametric_var(returns: pd.Series, level: float = 0.95) -> float:
-    """Gaussian (variance-covariance) VaR. Assumes normality — reported alongside
+    """Gaussian (variance-covariance) VaR. Assumes normality - reported alongside
     the historical figure precisely so the gap reveals fat tails."""
     r = returns.dropna()
     if r.empty:
@@ -69,7 +69,7 @@ def max_drawdown(returns: pd.Series) -> float:
 def max_drawdown_duration(returns: pd.Series) -> int:
     """Longest stretch (in periods) spent below a previous equity peak.
 
-    This is the "time under water" — often more painful to live through than the
+    This is the "time under water" - often more painful to live through than the
     depth itself, so we report it explicitly.
     """
     dd = drawdown_series(returns)

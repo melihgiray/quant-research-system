@@ -5,7 +5,7 @@ The execution-timing convention:
     A weight on row dated T is the target portfolio formed using information
     available *at the close of T*. The engine earns that weight on day **T+1**.
 
-The one-day execution lag is implemented in exactly ONE place — ``held = weights.shift(1)``
+The one-day execution lag is implemented in exactly ONE place - ``held = weights.shift(1)``
 inside :func:`portfolio_returns`. Signal modules are therefore free to compute a
 weight from same-day data (e.g. today's close), because the engine guarantees that
 weight is only ever *applied* to the next day's return. Centralising the lag means
@@ -46,7 +46,7 @@ class BacktestResult:
 
     @property
     def annual_turnover(self) -> float:
-        """Average annualised one-way turnover (× per year)."""
+        """Average annualised one-way turnover (x per year)."""
         from ..config import TRADING_DAYS_PER_YEAR
         return float(self.turnover.mean() * TRADING_DAYS_PER_YEAR)
 
@@ -88,10 +88,10 @@ def portfolio_returns(weights: pd.DataFrame, returns: pd.DataFrame) -> pd.Series
     Parameters
     ----------
     weights : pd.DataFrame
-        Target weights (date × ticker). Held constant between updates (forward
+        Target weights (date x ticker). Held constant between updates (forward
         filled). Row T is the target formed at the close of T.
     returns : pd.DataFrame
-        Simple asset returns (date × ticker), r_t = p_t/p_{t-1} - 1.
+        Simple asset returns (date x ticker), r_t = p_t/p_{t-1} - 1.
 
     Returns
     -------
@@ -116,7 +116,7 @@ def run_backtest(
     Parameters
     ----------
     weights : pd.DataFrame
-        Daily target weights (date × ticker).
+        Daily target weights (date x ticker).
     price_data : PriceData
         Aligned close/volume panel.
     cost : CostConfig, optional

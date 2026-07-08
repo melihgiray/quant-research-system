@@ -1,4 +1,4 @@
-"""Performance analytics — every headline metric, not just Sharpe.
+"""Performance analytics - every headline metric, not just Sharpe.
 
 A Sharpe ratio on its own hides a lot. It says nothing about tail risk, path
 dependence, or how the returns were earned. So this module computes the rest of
@@ -22,7 +22,7 @@ def _excess(returns: pd.Series, rf_annual: float, periods: int) -> pd.Series:
 
 
 def annualized_return(returns: pd.Series, periods: int = TRADING_DAYS_PER_YEAR) -> float:
-    """Geometric (compound) annualised return — the rate you actually realise."""
+    """Geometric (compound) annualised return - the rate you actually realise."""
     r = returns.dropna()
     if r.empty:
         return float("nan")
@@ -44,7 +44,7 @@ def sharpe_ratio(returns: pd.Series, rf_annual: float = 0.0,
     """Annualised Sharpe = mean excess return / volatility, scaled by sqrt(periods).
 
     Rewards return per unit of *total* volatility. Penalises upside the same as
-    downside, which is its main weakness — hence we also report Sortino.
+    downside, which is its main weakness - hence we also report Sortino.
     """
     r = _excess(returns, rf_annual, periods).dropna()
     if r.empty or r.std() == 0:
@@ -110,10 +110,10 @@ def win_loss_stats(returns: pd.Series) -> Dict[str, float]:
 
 def annualized_turnover(turnover: Optional[pd.Series],
                         periods: int = TRADING_DAYS_PER_YEAR) -> float:
-    """Annualised one-way turnover (× of portfolio traded per year).
+    """Annualised one-way turnover (x of portfolio traded per year).
 
     High turnover is where transaction costs and capacity limits bite, so it is
-    reported alongside returns: a great gross Sharpe at 50× turnover may be
+    reported alongside returns: a great gross Sharpe at 50x turnover may be
     uninvestable once costs scale with size.
     """
     if turnover is None or len(turnover) == 0:

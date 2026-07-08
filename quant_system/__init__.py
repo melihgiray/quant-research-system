@@ -1,4 +1,4 @@
-"""quant_system — a small but technically correct quantitative research stack.
+"""quant_system - a small but technically correct quantitative research stack.
 
 The package is organised into independent layers so that each piece can be
 reasoned about on its own:
@@ -18,4 +18,4 @@ Design rules that hold across the whole package:
   * Everything that touches a parameter reads it from :mod:`quant_system.config`.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"

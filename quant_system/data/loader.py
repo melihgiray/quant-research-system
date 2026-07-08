@@ -107,7 +107,7 @@ def load_price_data(
         if panel.close.shape[1] == 0:
             raise RuntimeError("no tickers returned any data")
         return panel
-    except Exception as exc:  # network/429/empty — degrade gracefully
+    except Exception as exc:  # network/429/empty - degrade gracefully
         if not allow_synthetic_fallback:
             raise
         warnings.warn(
@@ -183,7 +183,7 @@ def _write_cache(cache_dir, ticker, df) -> None:
 def _yf_download(tickers, start, end) -> dict:
     """Download via yfinance, returning {ticker: DataFrame[close, volume]}.
 
-    Uses ``auto_adjust=True`` so 'Close' is already split/dividend adjusted —
+    Uses ``auto_adjust=True`` so 'Close' is already split/dividend adjusted -
     the correct series for return-based backtesting.
     """
     import yfinance as yf
@@ -261,7 +261,7 @@ def _synthetic_panel(tickers, start, end, seed) -> PriceData:
         idio_vol = (0.06 + rng.random() * 0.12) / np.sqrt(252)
         idio = rng.normal(0.0, idio_vol, n)
         idio -= idio.mean()              # demean so realised alpha == alpha (seed-robust)
-        # Slow multi-month idiosyncratic trend so returns have *persistence* —
+        # Slow multi-month idiosyncratic trend so returns have *persistence* -
         # i.e. genuine momentum (and single-name reversion) for the signals to
         # capture. Pure GBM has none, which would make momentum untestable offline.
         period = 90 + rng.random() * 250

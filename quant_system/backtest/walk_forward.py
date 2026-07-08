@@ -12,12 +12,12 @@ Each fold fits/forms the strategy on data ending at the in-sample boundary, then
 evaluates on the *next, unseen* quarter. We concatenate ONLY the out-of-sample
 quarters into one continuous equity curve. Because consecutive OOS windows tile
 the timeline without overlap, that curve is a fair, fully out-of-sample track
-record — never reusing a day for both fitting and evaluation.
+record - never reusing a day for both fitting and evaluation.
 
 The strategy is supplied as a callback ``make_weights(price_data, fit_end)`` that
 returns a full daily weight matrix. For non-parametric strategies (momentum,
 pairs) ``fit_end`` is ignored. For the ML signal it refits using only data up to
-``fit_end`` and predicts beyond it — so the refit itself is walk-forward.
+``fit_end`` and predicts beyond it - so the refit itself is walk-forward.
 """
 
 from __future__ import annotations
@@ -121,7 +121,7 @@ def walk_forward(
         weights = make_weights(price_data, fit_end)
 
         # Run the engine on the full panel (so rolling cost stats have history),
-        # then keep only the OOS slice — that slice used no future information.
+        # then keep only the OOS slice - that slice used no future information.
         res: BacktestResult = run_backtest(weights, price_data, cost=cost, check_lookahead=True)
 
         seg_ret = res.returns.loc[oos_dates]

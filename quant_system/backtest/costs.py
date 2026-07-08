@@ -2,10 +2,10 @@
 
 Two components, matching how an execution desk decomposes trading cost:
 
-1. Half-spread  — you cross half the bid/ask on every share, independent of size.
+1. Half-spread  - you cross half the bid/ask on every share, independent of size.
                   Linear in traded notional. ~1-2 bps for liquid large-caps.
 
-2. Market impact — your own order pushes the price against you. The empirically
+2. Market impact - your own order pushes the price against you. The empirically
                    supported functional form is the *square-root* law:
 
                        impact_fraction = eta * sigma * sqrt(Q / V)
@@ -16,10 +16,10 @@ Two components, matching how an execution desk decomposes trading cost:
 Why square-root and not linear?  Empirically (Almgren 2005; Kyle/Obizhaeva;
 the BARRA/Citadel-style models every desk uses) impact grows roughly with the
 *square root* of participation rate, not linearly. Intuition: liquidity replenishes
-as you trade, so the marginal share is cheaper than the first — concave, not linear.
+as you trade, so the marginal share is cheaper than the first - concave, not linear.
 A linear model massively over-penalises large orders and under-penalises small ones.
 Crucially, square-root impact makes cost depend on *capital* (via Q), so the same
-strategy is cheaper at $1M than at $1B — exactly the capacity story a PM cares about.
+strategy is cheaper at $1M than at $1B - exactly the capacity story a PM cares about.
 """
 
 from __future__ import annotations
@@ -86,7 +86,7 @@ def transaction_cost_fraction(
         cost_frac = sum_i |dw_i| * ( spread_frac + eta * sigma_i * sqrt(Q_i / V_i) )
 
     with Q_i = |dw_i| * capital / price_i  (shares traded) and V_i = ADV in shares.
-    Note the spread term's capital cancels, but impact does not — larger capital
+    Note the spread term's capital cancels, but impact does not - larger capital
     means larger participation Q/V means higher per-unit impact. That capital
     dependence is the whole reason to use this model.
 

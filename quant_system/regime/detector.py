@@ -44,7 +44,7 @@ def market_proxy_returns(price_data, benchmark: Optional[str] = None) -> pd.Seri
     """Daily return of the 'market' the regime is measured on.
 
     Uses ``benchmark`` (e.g. 'SPY') if present, else the equal-weight average of
-    the panel — a reasonable broad-market proxy when no index is loaded.
+    the panel - a reasonable broad-market proxy when no index is loaded.
     """
     rets = price_data.returns()
     if benchmark and benchmark in rets.columns:
@@ -77,7 +77,7 @@ def hmm_regime(price_data, cfg: RegimeConfig = None, seed: int = 7,
     installed so callers can degrade to the vol-ratio detector.
 
     NOTE: these labels are smoothed (non-causal) and intended for analysis/plots,
-    not for live position sizing — see the module docstring.
+    not for live position sizing - see the module docstring.
     """
     cfg = cfg or RegimeConfig()
     try:

@@ -3,14 +3,14 @@
 Sends a market snapshot to Claude and gets back something a system can act on
 instead of free text:
 
-  * STRUCTURED OUTPUT — the model is forced to call a tool whose input_schema is
+  * STRUCTURED OUTPUT - the model is forced to call a tool whose input_schema is
     our analysis schema, so we get back validated JSON (sentiment, risk score,
     risks, action) instead of prose we would have to regex. No parsing, no
     "the model added a preamble" failures.
-  * PROMPT CACHING — the long, static analyst instructions are sent with
+  * PROMPT CACHING - the long, static analyst instructions are sent with
     cache_control so repeated polls reuse the cached system prompt (cheaper +
     lower latency on a monitor that runs every few minutes).
-  * ALERT THRESHOLDS — a pure ``should_alert`` function turns the structured
+  * ALERT THRESHOLDS - a pure ``should_alert`` function turns the structured
     assessment into a yes/no alert decision, kept separate from the model call so
     it is testable without the network.
 
@@ -87,7 +87,7 @@ class AnalystConfig:
 
 
 def _system_prompt() -> str:
-    """Static analyst instructions — long and stable, so we cache it."""
+    """Static analyst instructions - long and stable, so we cache it."""
     return (
         "You are a disciplined sell-side risk analyst embedded in a quantitative "
         "trading desk. You are given a snapshot of market data for one or more "

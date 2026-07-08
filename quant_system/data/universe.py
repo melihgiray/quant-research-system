@@ -15,7 +15,7 @@ from __future__ import annotations
 from typing import Dict, List
 
 
-# The 11 SPDR sector ETFs — a clean cross-section of the US equity market.
+# The 11 SPDR sector ETFs - a clean cross-section of the US equity market.
 # Cross-sectional momentum across sectors is a classic, well-behaved test bed.
 SECTOR_ETFS: List[str] = [
     "XLB",  # Materials
@@ -44,7 +44,7 @@ LIQUID_LARGE_CAPS: List[str] = [
 #   GLD/SLV : gold vs silver (precious metals).
 #   XLE/XOP : energy sector vs E&P sub-sector.
 #   KO/PEP  : the classic consumer-staples duopoly.
-#   EWA/EWC : Australia vs Canada — both commodity-driven economies.
+#   EWA/EWC : Australia vs Canada - both commodity-driven economies.
 PAIRS_CANDIDATES: List[tuple] = [
     ("GLD", "SLV"),
     ("XLE", "XOP"),

@@ -2,12 +2,12 @@
 
 Two ways to use a regime:
 
-* ``apply_regime_sizing`` — keep the same strategy but cut gross exposure in the
+* ``apply_regime_sizing`` - keep the same strategy but cut gross exposure in the
   defensive regime (de-risk when vol is high). This is the conservative default
   and answers the "what happens when volatility spikes?" question directly:
   positions are scaled by ``defensive_scale`` (e.g. halved).
 
-* ``switch_strategies`` — actually route to a different strategy per regime
+* ``switch_strategies`` - actually route to a different strategy per regime
   (e.g. momentum in calm markets, mean-reversion or cash when stressed). More
   aggressive; provided for completeness.
 
@@ -29,7 +29,7 @@ def apply_regime_sizing(weights: pd.DataFrame, regime_labels: pd.Series,
     Parameters
     ----------
     weights : pd.DataFrame
-        Target weights (date × ticker).
+        Target weights (date x ticker).
     regime_labels : pd.Series
         Causal 0/1 labels (1 = defensive). Aligned/ffilled to the weight index.
     defensive_scale : float

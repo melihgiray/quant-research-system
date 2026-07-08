@@ -4,12 +4,12 @@ This is the step that separates "I ran a backtest" from "I understand my
 backtest". We regress the strategy's daily excess return on three factor
 returns and read off:
 
-    alpha (intercept)  — return NOT explained by the factors. Annualised and
+    alpha (intercept)  - return NOT explained by the factors. Annualised and
                          tested for significance. This is the part you can
                          honestly call skill/edge.
-    betas              — exposure to each factor. A "market-neutral" strategy
+    betas              - exposure to each factor. A "market-neutral" strategy
                          should have market beta ~ 0.
-    R^2                — how much of the variance the factors explain. High R^2
+    R^2                - how much of the variance the factors explain. High R^2
                          with ~0 alpha means you are just selling factor beta.
 
 Factors are built from liquid ETF proxies (no external data dependency):

@@ -40,9 +40,9 @@ def vol_target_scale(
     Parameters
     ----------
     weights : pd.DataFrame
-        Pre-sizing target weights (date × ticker).
+        Pre-sizing target weights (date x ticker).
     asset_returns : pd.DataFrame
-        Simple asset returns (date × ticker).
+        Simple asset returns (date x ticker).
     target_vol : float
         Desired annualised portfolio volatility.
     lookback : int

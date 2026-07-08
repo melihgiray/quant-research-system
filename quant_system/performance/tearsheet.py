@@ -69,7 +69,7 @@ def format_tearsheet(
     line = "=" * width
     rows = [
         line,
-        f" {title} — PERFORMANCE TEARSHEET".ljust(width),
+        f" {title} - PERFORMANCE TEARSHEET".ljust(width),
         line,
         f" Period               {span}",
         f" Observations         {m['n_periods']}  (~{years:.1f} yrs)",
@@ -126,7 +126,7 @@ def plot_equity_curve(returns: pd.Series, path: str, title: str = "Equity curve"
 
 
 def plot_drawdown(returns: pd.Series, path: str, title: str = "Drawdown") -> str:
-    """Underwater plot — shaded peak-to-trough declines over time."""
+    """Underwater plot - shaded peak-to-trough declines over time."""
     dd = drawdown_series(returns) * 100.0
     fig, ax = plt.subplots(figsize=(9, 3.2))
     ax.fill_between(dd.index, dd.values, 0.0, color="#d62728", alpha=0.4)
@@ -138,7 +138,7 @@ def plot_drawdown(returns: pd.Series, path: str, title: str = "Drawdown") -> str
 
 def plot_regime_overlay(price: pd.Series, regimes: pd.Series, path: str,
                         title: str = "Regime overlay") -> str:
-    """Price line with the high-vol/defensive regime shaded — eyeball the detector."""
+    """Price line with the high-vol/defensive regime shaded - eyeball the detector."""
     fig, ax = plt.subplots(figsize=(9, 4.0))
     ax.plot(price.index, price.values, lw=1.2, color="#222222", label="price")
     reg = regimes.reindex(price.index).ffill()

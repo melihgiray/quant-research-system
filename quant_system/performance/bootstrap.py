@@ -2,8 +2,8 @@
 
 A point estimate of Sharpe or CAGR hides its own sampling error. We attach error
 bars with the **stationary bootstrap** (Politis & Romano, 1994): resample the
-return series in blocks of random (geometric) length so that serial correlation —
-which a naive i.i.d. bootstrap would destroy — is preserved on average. The
+return series in blocks of random (geometric) length so that serial correlation -
+which a naive i.i.d. bootstrap would destroy - is preserved on average. The
 average block length is the one knob; it should span the dependence horizon
 (~2 trading weeks here).
 

@@ -4,7 +4,7 @@ Cross-sectional momentum is the Jegadeesh & Titman (1993) effect: winners over
 the past ~12 months keep winning over the next month. We use the "12-1"
 formation (skip the most recent month) because the very last month tends to
 *reverse* (short-term reversal / microstructure), so including it pollutes the
-signal. Long the top quintile, short the bottom quintile, rebalanced monthly —
+signal. Long the top quintile, short the bottom quintile, rebalanced monthly -
 a dollar-neutral book, which is what makes the factor decomposition interesting
 (market beta should come out near zero).
 

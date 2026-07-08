@@ -6,12 +6,12 @@ you probably tried many strategies and reported the best, which inflates the
 maximum Sharpe you'd see by chance. This module implements the three Bailey &
 López de Prado tools that address exactly this:
 
-  * Probabilistic Sharpe Ratio (PSR) — P(true SR > benchmark SR), corrected for
+  * Probabilistic Sharpe Ratio (PSR) - P(true SR > benchmark SR), corrected for
     skew/kurtosis.  (Bailey & López de Prado, 2012)
-  * Deflated Sharpe Ratio (DSR) — PSR where the benchmark is the *expected maximum*
+  * Deflated Sharpe Ratio (DSR) - PSR where the benchmark is the *expected maximum*
     Sharpe across N independent trials, so a Sharpe found by searching is
     discounted.  (Bailey & López de Prado, 2014)
-  * Minimum Track Record Length (minTRL) — the sample length needed for the Sharpe
+  * Minimum Track Record Length (minTRL) - the sample length needed for the Sharpe
     to be significant at a chosen confidence.
 
 All maths is done on the *per-period* (e.g. daily) Sharpe, which is the correct
@@ -34,7 +34,7 @@ from scipy import stats
 
 from ..config import TRADING_DAYS_PER_YEAR
 
-# Euler–Mascheroni constant, used in the expected-maximum-of-N-Gaussians formula.
+# Euler-Mascheroni constant, used in the expected-maximum-of-N-Gaussians formula.
 _EULER_GAMMA = 0.5772156649015329
 
 
@@ -73,7 +73,7 @@ def _sr_estimator_variance(m: SharpeMoments) -> float:
     Var(SR_hat) = (1 - γ3·SR + ((γ4-1)/4)·SR²) / (n-1)
 
     For normal returns (γ3=0, γ4=3) this reduces to (1 + SR²/2)/(n-1), the classic
-    Lo (2002) result. Fatter tails / negative skew inflate it — i.e. make the same
+    Lo (2002) result. Fatter tails / negative skew inflate it - i.e. make the same
     Sharpe less significant.
     """
     denom = 1.0 - m.skew * m.sr + ((m.kurtosis - 1.0) / 4.0) * m.sr ** 2
@@ -117,7 +117,7 @@ def expected_max_sharpe(sr_variance_across_trials: float, n_trials: int) -> floa
     E[max SR] ≈ √V · [ (1-γ)·Φ⁻¹(1 - 1/N) + γ·Φ⁻¹(1 - 1/(N·e)) ]
 
     where V is the variance of the Sharpe ratios across the trials and γ is the
-    Euler–Mascheroni constant. This is the benchmark a real strategy must beat:
+    Euler-Mascheroni constant. This is the benchmark a real strategy must beat:
     even pure noise, searched N times, produces a best-of-N Sharpe this large.
     """
     if n_trials <= 1 or sr_variance_across_trials <= 0:

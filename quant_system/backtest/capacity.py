@@ -7,7 +7,7 @@ this; here it falls straight out of sweeping the capital input and watching the
 net Sharpe decay.
 
 We define capacity as the capital at which the *net* Sharpe falls to half of the
-*frictionless* (zero-cost) Sharpe — a transparent, defensible convention.
+*frictionless* (zero-cost) Sharpe - a transparent, defensible convention.
 """
 
 from __future__ import annotations
@@ -99,7 +99,7 @@ def plot_capacity(sweep: pd.DataFrame, path: str, capacity: Optional[float] = No
     gross = sweep.attrs.get("gross_sharpe")
     if gross is not None and np.isfinite(gross):
         ax.axhline(gross, ls="--", color="grey", lw=1, label=f"frictionless ({gross:.2f})")
-        ax.axhline(0.5 * gross, ls=":", color="#d62728", lw=1, label="½ frictionless")
+        ax.axhline(0.5 * gross, ls=":", color="#d62728", lw=1, label="half frictionless")
     if capacity is not None and np.isfinite(capacity):
         ax.axvline(capacity, color="#2ca02c", lw=1.2)
         ax.text(capacity, ax.get_ylim()[0], f"  capacity≈${capacity/1e6:.0f}M",
@@ -124,7 +124,7 @@ def capacity_summary(sweep: pd.DataFrame, cap: dict) -> List[str]:
         return f">${sweep.index.max()/1e6:.0f}M" if x == float("inf") else f"${x/1e6:.0f}M"
     lines = ["CAPACITY / COST SENSITIVITY",
              f" Frictionless Sharpe   {cap['gross_sharpe']:.2f}",
-             f" Capacity (½-Sharpe)   {money(cap['capacity'])}"]
+             f" Capacity (half-Sharpe)   {money(cap['capacity'])}"]
     if cap.get("note"):
         lines.append(f" note: {cap['note']}")
     return lines
