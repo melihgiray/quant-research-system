@@ -7,7 +7,7 @@ Pipeline:
      single model learns a general "what precedes an up day" mapping and gets far
      more data than per-asset models).
   4. Fit a gradient-boosting classifier on a trailing 2-year window.
-  5. Size positions by *prediction strength* — (P(up) - 0.5), not the hard class —
+  5. Size positions by *prediction strength* - (P(up) - 0.5), not the hard class -
      so confident days get bigger bets. Demeaned cross-sectionally and gross-
      normalised to give a market-neutral long/short book.
   6. SHAP values rank which features actually drive the predictions.
@@ -41,7 +41,7 @@ def _rsi(close: pd.Series, span: int = 14) -> pd.Series:
     """Relative Strength Index over `span` days (rolling-mean variant).
 
     RSI = 100 - 100/(1+RS), RS = avg gain / avg loss. Bounded 0-100; <30 oversold,
-    >70 overbought. A momentum/мean-reversion hybrid feature.
+    >70 overbought. A momentum/mean-reversion hybrid feature.
     """
     delta = close.diff()
     gain = delta.clip(lower=0.0).rolling(span, min_periods=span).mean()
@@ -81,16 +81,21 @@ def compute_features(price_data, cfg: MLConfig = None) -> Dict[str, pd.DataFrame
 
 
 def _pooled_training_set(features, rets, fit_end, train_window):
-    """Stack assets into (X, y) using rows with known label up to `fit_end`."""
+    """Stack assets into (X, y) using rows whose label is known by `fit_end`.
+
+    A row dated d is labelled with the sign of the return on the NEXT trading
+    day. So the row dated fit_end itself must be excluded: its label is the
+    return on the first out-of-sample day, which the model must not see. Hence
+    the strict `< fit_end` cut below. Rows whose next-day return is missing get
+    a NaN label (not a fake "down") and fall out with dropna.
+    """
     start = fit_end - pd.tseries.offsets.BDay(train_window)
     X_parts, y_parts = [], []
     for t, feats in features.items():
-        # Label = sign of NEXT day's return; only valid where that return is known.
-        label = (rets[t].shift(-1) > 0).astype(float)
+        next_ret = rets[t].shift(-1)
         df = feats.copy()
-        df["_y"] = label
-        df = df.loc[(df.index >= start) & (df.index <= fit_end)]
-        # Drop the last row (its next-day label leaks past fit_end) and any NaNs.
+        df["_y"] = (next_ret > 0).astype(float).where(next_ret.notna())
+        df = df.loc[(df.index >= start) & (df.index < fit_end)]
         df = df.dropna()
         if not df.empty:
             X_parts.append(df[FEATURE_NAMES].values)
@@ -101,7 +106,7 @@ def _pooled_training_set(features, rets, fit_end, train_window):
 
 
 def _proba_panel(model, features) -> pd.DataFrame:
-    """Predict P(up) for every asset/day -> DataFrame(date × ticker)."""
+    """Predict P(up) for every asset/day -> DataFrame(date x ticker)."""
     cols = {}
     for t, feats in features.items():
         X = feats[FEATURE_NAMES]
@@ -118,7 +123,7 @@ def _weights_from_proba(proba: pd.DataFrame, deadband: float, max_weight: float)
 
     Constraint order matters: we keep dollar-neutrality EXACT (it is what makes
     the factor decomposition meaningful) and enforce the per-name cap by scaling
-    the whole row uniformly rather than clipping single names — a uniform scale
+    the whole row uniformly rather than clipping single names - a uniform scale
     preserves the zero row-sum, whereas clipping would reintroduce a net tilt.
     """
     signal = proba - 0.5
@@ -179,7 +184,7 @@ def shap_feature_importance(price_data, cfg: MLConfig = None, fit_end=None,
 
     SHAP (SHapley Additive exPlanations) attributes each prediction to its
     features in a game-theoretically fair way, so averaging |SHAP| across rows
-    gives a principled global importance ranking — more trustworthy than a tree's
+    gives a principled global importance ranking - more trustworthy than a tree's
     built-in split-count importance. Falls back to permutation importance if the
     shap library is unavailable.
     """

@@ -72,6 +72,27 @@ def test_ml_features_have_no_future_leak():
     pd.testing.assert_series_equal(one["mom_5"], expected, check_names=False)
 
 
+def test_ml_training_set_ignores_data_after_fit_end():
+    # The training set built from the full panel must equal the one built from a
+    # panel truncated at fit_end. If they differ, the model saw the future.
+    from quant_system.signals.ml_signal import _pooled_training_set
+    full = load_price_data(universe("largecaps")[:6], "2017-01-01", "2022-12-31",
+                           use_synthetic=True)
+    fit_end = pd.Timestamp("2021-06-30")
+    cut = full.close.index[full.close.index <= fit_end]
+    truncated = load_price_data(universe("largecaps")[:6], "2017-01-01", "2022-12-31",
+                                use_synthetic=True)
+    truncated.close = truncated.close.loc[cut]
+    truncated.volume = truncated.volume.loc[cut]
+
+    f_full = compute_features(full, CFG.ml)
+    f_trunc = compute_features(truncated, CFG.ml)
+    X1, y1 = _pooled_training_set(f_full, full.returns(), fit_end, CFG.ml.train_window)
+    X2, y2 = _pooled_training_set(f_trunc, truncated.returns(), fit_end, CFG.ml.train_window)
+    assert np.array_equal(X1, X2)
+    assert np.array_equal(y1, y2)
+
+
 def test_ml_weights_are_market_neutral_and_bounded():
     p = load_price_data(universe("largecaps"), "2017-01-01", "2022-12-31", use_synthetic=True)
     w = train_predict(p, pd.Timestamp("2021-12-31"), CFG.ml, max_weight=0.10)
