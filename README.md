@@ -20,7 +20,9 @@ Three strategies:
 - **A machine-learning signal.** A gradient-boosted classifier predicts whether
   each name is up or down tomorrow from eight lagged features. The predicted
   probability sets the position size, so a confident call gets a bigger bet. SHAP
-  values show which features it actually leans on.
+  values show which features it actually leans on, and the classifier can be
+  scored with purged, embargoed cross-validation (`--cv`) so overlapping labels
+  can't leak between the folds.
 
 Around those:
 

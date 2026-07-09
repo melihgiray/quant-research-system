@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "quant-research-system"
-version = "0.2.0"
+version = "0.3.0"
 description = "Backtesting framework for systematic equity strategies, with walk-forward validation and realistic transaction costs."
 readme = "README.md"
 requires-python = ">=3.10"

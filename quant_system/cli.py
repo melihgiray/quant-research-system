@@ -35,6 +35,7 @@ from .signals.momentum import cross_sectional_momentum
 from .signals.mean_reversion import find_cointegrated_pair, pairs_signal, scan_candidate_pairs
 from .performance.multiple_testing import fdr_report, fdr_summary_lines
 from .signals.ml_signal import train_predict, shap_feature_importance
+from .signals.cv import purged_cv_scores
 from .performance.tearsheet import format_tearsheet, save_report_plots
 from .performance.factor_decomp import factor_decomposition
 from .performance.bootstrap import bootstrap_summary
@@ -201,6 +202,8 @@ def main(argv: Optional[List[str]] = None) -> int:
                    help="add stationary-bootstrap confidence intervals to each tearsheet")
     p.add_argument("--capacity", action="store_true",
                    help="run a capital/cost-sensitivity sweep on the momentum book")
+    p.add_argument("--cv", action="store_true",
+                   help="score the ML classifier with purged, embargoed K-fold CV")
     args = p.parse_args(argv)
 
     cfg = build_config(args)
@@ -240,6 +243,17 @@ def main(argv: Optional[List[str]] = None) -> int:
     if not artefacts:
         print("[cli] no strategy produced results")
         return 1
+
+    # ---- purged cross-validation (optional, ML only) ----
+    if args.cv:
+        print("\n[cli] purged cross-validation of the ML classifier...")
+        cv_universe = pdat.subset(universe("largecaps")) if any(
+            t in pdat.close.columns for t in universe("largecaps")) else pdat
+        cv_res = purged_cv_scores(cv_universe, cfg.ml, seed=cfg.random_seed)
+        if cv_res is not None:
+            print("\n".join(cv_res.summary()))
+        else:
+            print("[cli] not enough data for the CV folds")
 
     # ---- SHAP (optional, ML only) ----
     if args.shap and "ml" in artefacts:

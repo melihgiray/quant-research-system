@@ -12,6 +12,7 @@ from .mean_reversion import (
     pairs_signal,
     single_asset_reversion,
 )
+from .cv import PurgedKFold, purged_cv_scores, pooled_frame
 
 __all__ = [
     "cross_sectional_momentum",
@@ -20,4 +21,7 @@ __all__ = [
     "scan_candidate_pairs",
     "pairs_signal",
     "single_asset_reversion",
+    "PurgedKFold",
+    "purged_cv_scores",
+    "pooled_frame",
 ]

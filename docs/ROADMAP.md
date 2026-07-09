@@ -19,7 +19,7 @@ Done so far is marked `[x]`.
 - [ ] Hierarchical risk parity allocator, compared against inverse-variance.
 
 ## Machine learning
-- [ ] Purged and embargoed cross-validation to stop label leakage.
+- [x] Purged and embargoed cross-validation to stop label leakage.
 - [ ] A proper sklearn pipeline with calibration and sample weights by uniqueness.
 - [ ] Meta-labeling: a second model decides whether and how big to act.
 

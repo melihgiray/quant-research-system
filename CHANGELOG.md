@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0
+
+- Added purged, embargoed K-fold cross-validation for the ML classifier
+  (`signals/cv.py`, CLI flag `--cv`). Folds are contiguous time blocks;
+  training rows whose label interval overlaps the test window are purged, and
+  a configurable embargo drops the days right after each test block. Reports
+  per-fold accuracy and AUC.
+
 ## 0.2.0
 
 - Fixed a one-day label leak in the ML training window: the row dated at the
