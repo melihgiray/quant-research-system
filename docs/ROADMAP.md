@@ -14,7 +14,8 @@ Done so far is marked `[x]`.
 - [ ] Extend the FDR control to the ML feature search.
 
 ## Realism and portfolio construction
-- [ ] Better execution: participation cap, next-open fills, partial fills.
+- [x] Volume-participation cap with partial fills that carry over days.
+- [ ] Next-open fills (needs open prices in the loader).
 - [ ] Combine the three strategies into one book with volatility targeting.
 - [ ] Hierarchical risk parity allocator, compared against inverse-variance.
 

@@ -32,7 +32,9 @@ Around those:
   confirms the lag strips its edge back to noise.
 - Trading costs as a half-spread plus square-root market impact. Impact grows with
   how much you trade relative to daily volume, so the same strategy costs more at
-  larger size.
+  larger size. An optional participation cap (`--max-participation 0.05`) limits
+  daily trading in a name to a fraction of its volume and carries the unfilled
+  remainder to later days, the way a desk would actually work a large order.
 - Walk-forward validation. The model refits on a rolling window and only the
   out-of-sample stretches get stitched into the final equity curve.
 - The usual performance stats (Sharpe, Sortino, Calmar, drawdown, hit rate,

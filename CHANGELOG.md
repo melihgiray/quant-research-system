@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.4.0
+
+- Added an execution model (`backtest/execution.py`, CLI flag
+  `--max-participation`). Daily trading in a name is capped at a fraction of
+  its average daily volume; whatever doesn't fill carries to later days, so
+  the held book chases the target instead of teleporting to it. The gap
+  between target and held is reported per day.
+- Fixed `cost=None`, which the docstring promised meant zero costs but which
+  actually substituted the default cost config. Frictionless baselines (the
+  capacity sweep among them) were quietly paying spread and impact.
+
 ## 0.3.0
 
 - Added purged, embargoed K-fold cross-validation for the ML classifier
