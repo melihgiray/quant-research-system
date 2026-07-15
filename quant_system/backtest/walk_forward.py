@@ -28,7 +28,7 @@ from typing import Callable, List, Optional
 import numpy as np
 import pandas as pd
 
-from ..config import CostConfig, WalkForwardConfig
+from ..config import CostConfig, ExecutionConfig, WalkForwardConfig
 from .engine import run_backtest, BacktestResult
 
 
@@ -78,6 +78,7 @@ def walk_forward(
     wf: Optional[WalkForwardConfig] = None,
     cost: Optional[CostConfig] = None,
     verbose: bool = True,
+    execution: Optional["ExecutionConfig"] = None,
 ) -> WalkForwardResult:
     """Run expanding/rolling walk-forward and return the concatenated OOS record.
 
@@ -92,6 +93,8 @@ def walk_forward(
         Window sizes.
     cost : CostConfig
         Transaction-cost assumptions used in each fold.
+    execution : ExecutionConfig, optional
+        Participation cap passed through to the engine.
 
     Returns
     -------
@@ -122,7 +125,8 @@ def walk_forward(
 
         # Run the engine on the full panel (so rolling cost stats have history),
         # then keep only the OOS slice - that slice used no future information.
-        res: BacktestResult = run_backtest(weights, price_data, cost=cost, check_lookahead=True)
+        res: BacktestResult = run_backtest(weights, price_data, cost=cost,
+                                           check_lookahead=True, execution=execution)
 
         seg_ret = res.returns.loc[oos_dates]
         seg_to = res.turnover.loc[oos_dates]

@@ -12,7 +12,7 @@ All windows are expressed in *trading days* (~252/year, ~21/month, ~63/quarter).
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
-from typing import List
+from typing import List, Optional
 
 
 # Trading-day calendar constants (approximate, the market convention).
@@ -54,6 +54,20 @@ class CostConfig:
     # unavailable (e.g. an establishment trade before the window warms up) we use
     # this instead of 0, so impact is never silently understated. ~1.5%/day ~ 24%/yr.
     default_daily_vol: float = 0.015
+
+
+@dataclass(frozen=True)
+class ExecutionConfig:
+    """Execution constraints applied between the target and the held book.
+
+    max_participation:
+        Cap on how much of a name's average daily volume the book may trade in
+        one day (0.05 = 5% of ADV). Trades beyond the cap carry over to later
+        days. None disables the cap and everything fills same-day, which is
+        the right assumption only for a small book in liquid names.
+    """
+
+    max_participation: Optional[float] = None
 
 
 @dataclass(frozen=True)
@@ -177,6 +191,7 @@ class Config:
     random_seed: int = 7               # reproducibility for synthetic data / any sampling
 
     cost: CostConfig = field(default_factory=CostConfig)
+    execution: ExecutionConfig = field(default_factory=ExecutionConfig)
     walk_forward: WalkForwardConfig = field(default_factory=WalkForwardConfig)
     momentum: MomentumConfig = field(default_factory=MomentumConfig)
     pairs: PairsConfig = field(default_factory=PairsConfig)

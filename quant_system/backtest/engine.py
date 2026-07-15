@@ -27,8 +27,9 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 
-from ..config import CostConfig, RiskConfig
+from ..config import CostConfig, ExecutionConfig, RiskConfig
 from .costs import transaction_cost_fraction
+from .execution import apply_execution
 
 
 @dataclass
@@ -43,6 +44,7 @@ class BacktestResult:
     held_weights: pd.DataFrame      # actual weights held each day (already lagged)
     equity: pd.Series               # cumulative growth of $1 on `returns`
     meta: dict = field(default_factory=dict)
+    fill_gap: Optional[pd.Series] = None   # daily sum |target - held| under execution caps
 
     @property
     def annual_turnover(self) -> float:
@@ -110,6 +112,7 @@ def run_backtest(
     risk: Optional[RiskConfig] = None,
     apply_drawdown_stop: bool = False,
     check_lookahead: bool = True,
+    execution: Optional[ExecutionConfig] = None,
 ) -> BacktestResult:
     """Run a full backtest: lagged P&L, realistic costs, optional drawdown stop.
 
@@ -127,6 +130,10 @@ def run_backtest(
         If True, overlay a portfolio max-drawdown stop on the net returns.
     check_lookahead : bool
         Run :func:`assert_no_lookahead` first (recommended).
+    execution : ExecutionConfig, optional
+        Volume-participation cap. When set, each day's trade in a name is
+        limited to a fraction of its ADV and the remainder carries to later
+        days, so the held book chases the target instead of teleporting to it.
 
     Returns
     -------
@@ -136,6 +143,9 @@ def run_backtest(
 
     close = price_data.close
     volume = price_data.volume
+    # cost=None is a contract: charge nothing. Keep a flag rather than
+    # substituting a default config, which would quietly charge ~bps.
+    frictionless = cost is None
     cost = cost or CostConfig()
 
     if check_lookahead:
@@ -144,9 +154,18 @@ def run_backtest(
     returns = close.pct_change()
     cols = returns.columns
 
-    # Held weights after the one-day lag (the actual book each day).
+    # Cost/liquidity inputs, lagged by one day so anything used on day T was
+    # known strictly before T. Expanding-window fallback covers the warm-up.
+    adv = (volume.rolling(cost.adv_lookback, min_periods=5).mean()
+           .fillna(volume.expanding(min_periods=1).mean()).shift(1))
+    sigma = (returns.rolling(cost.vol_lookback, min_periods=5).std()
+             .fillna(returns.expanding(min_periods=2).std()).shift(1))
+
+    # Target book after the one-day execution lag, then the book that is
+    # actually achievable under the participation cap (identical when no cap).
     w = weights.reindex(index=returns.index, columns=cols).ffill()
-    held = w.shift(1).fillna(0.0)
+    target_held = w.shift(1).fillna(0.0)
+    held, fill_gap = apply_execution(target_held, close, adv, cost.capital, execution)
 
     gross = (held * returns).sum(axis=1)
 
@@ -156,27 +175,20 @@ def run_backtest(
         trades.iloc[0] = held.iloc[0]
     turnover = trades.abs().sum(axis=1)
 
-    # Cost inputs, lagged by one day so a fill on T uses liquidity/vol known < T.
-    # Fall back to an expanding-window estimate before the rolling window warms up,
-    # so early trades are still charged a sensible (non-zero) impact.
-    adv = (volume.rolling(cost.adv_lookback, min_periods=5).mean()
-           .fillna(volume.expanding(min_periods=1).mean()).shift(1))
-    sigma = (returns.rolling(cost.vol_lookback, min_periods=5).std()
-             .fillna(returns.expanding(min_periods=2).std()).shift(1))
-
     # Per-day transaction cost. The loop runs once per date and is vectorised over
     # names inside; for a few thousand days this is negligible and stays readable.
     cost_vals = np.zeros(len(returns))
-    trade_days = np.where(turnover.values > 0)[0]
-    for i in trade_days:
-        t = returns.index[i]
-        cost_vals[i] = transaction_cost_fraction(
-            delta_weights=trades.iloc[i],
-            prices=close.loc[t],
-            adv_shares=adv.loc[t],
-            sigma=sigma.loc[t],
-            cost=cost,
-        )
+    if not frictionless:
+        trade_days = np.where(turnover.values > 0)[0]
+        for i in trade_days:
+            t = returns.index[i]
+            cost_vals[i] = transaction_cost_fraction(
+                delta_weights=trades.iloc[i],
+                prices=close.loc[t],
+                adv_shares=adv.loc[t],
+                sigma=sigma.loc[t],
+                cost=cost,
+            )
     costs = pd.Series(cost_vals, index=returns.index)
 
     net = gross - costs
@@ -202,5 +214,10 @@ def run_backtest(
             "synthetic": getattr(price_data, "synthetic", False),
             "n_days": int(len(returns)),
             "drawdown_stop": bool(apply_drawdown_stop and risk is not None),
+            "frictionless": frictionless,
+            "max_participation": (execution.max_participation
+                                  if execution is not None else None),
+            "avg_fill_gap": float(fill_gap.mean()) if len(fill_gap) else 0.0,
         },
+        fill_gap=fill_gap,
     )

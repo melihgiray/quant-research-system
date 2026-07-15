@@ -43,12 +43,15 @@ from .performance.bootstrap import bootstrap_summary
 
 def build_config(args) -> Config:
     """Construct the immutable Config from CLI args (overriding defaults)."""
+    from .config import ExecutionConfig
+
     cfg = default_config().with_(
         start=args.start,
         end=args.end,
         use_synthetic=args.synthetic,
         reports_dir=args.reports_dir,
         risk_free_rate=args.rf,
+        execution=ExecutionConfig(max_participation=args.max_participation),
     )
     return cfg
 
@@ -140,12 +143,13 @@ def run_one_strategy(name: str, pdat, cfg: Config, regime, rf: float,
 
     # Walk-forward (preferred) or single full-sample backtest.
     if walk:
-        wf = walk_forward(sig_universe, make, cfg.walk_forward, cfg.cost, verbose=True)
+        wf = walk_forward(sig_universe, make, cfg.walk_forward, cfg.cost, verbose=True,
+                          execution=cfg.execution)
         returns, turnover = wf.returns, wf.turnover
         span_note = f"walk-forward OOS, {wf.n_folds} folds, {wf.oos_span}"
     else:
         w = make(sig_universe, sig_universe.close.index[-1])
-        res = run_backtest(w, sig_universe, cost=cfg.cost)
+        res = run_backtest(w, sig_universe, cost=cfg.cost, execution=cfg.execution)
         returns, turnover = res.returns, res.turnover
         span_note = "full-sample (no walk-forward)"
 
@@ -204,6 +208,9 @@ def main(argv: Optional[List[str]] = None) -> int:
                    help="run a capital/cost-sensitivity sweep on the momentum book")
     p.add_argument("--cv", action="store_true",
                    help="score the ML classifier with purged, embargoed K-fold CV")
+    p.add_argument("--max-participation", type=float, default=None, metavar="FRAC",
+                   help="cap daily trading in a name at this fraction of its ADV "
+                        "(e.g. 0.05); unfilled amounts carry to later days")
     args = p.parse_args(argv)
 
     cfg = build_config(args)
