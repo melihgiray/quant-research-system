@@ -6,6 +6,32 @@ out of sample, and prints the results. Nothing here connects to a broker and
 nothing trades live. I built it to find out whether these ideas survive once
 costs and proper out-of-sample testing get in the way.
 
+## Results
+
+Walk-forward out-of-sample, real daily data (yfinance), 2016-01-04 to
+2024-10-07, net of spread and square-root impact costs at $1M capital.
+Reproduce with `python scripts/build_results.py`.
+
+| Strategy | OOS Sharpe | Ann. return | Max drawdown | Turnover |
+|---|---|---|---|---|
+| Cross-sectional momentum (11 sector ETFs) | 0.00 | -0.4% | -20.8% | 7.6x |
+| Pairs trade (per-fold selection) | 0.42 | +0.5% | -1.6% | 1.1x |
+| ML directional (24 large caps) | -0.82 | -3.4% | -27.7% | 112.7x |
+
+![Out-of-sample equity curves](docs/results/equity_oos.png)
+
+Reading these honestly: none of the three clears a significance bar after
+costs, and the ML signal's edge is eaten alive by its own 112x turnover. That
+is the finding, not a failure of the plumbing. The framework's job is to stop
+a weak signal from looking strong, and two details in this table show it
+working. First, sector momentum's Sharpe of 0.00 is what the real
+Jegadeesh-Titman effect tends to look like on a small, recent, cost-charged
+universe. Second, the pairs number used to be better: selecting the pair on
+the full sample (which peeks at the test years) gave a 0.61 Sharpe, and
+re-selecting the pair inside each walk-forward fold, which is the only thing
+you could actually do in real time, deflates it to 0.42. The gap between those
+two numbers is measured look-ahead bias.
+
 ## What's in it
 
 Three strategies:
@@ -16,7 +42,10 @@ Three strategies:
 - **A pairs trade.** Find a cointegrated pair with the Engle-Granger test, trade
   the spread when it stretches past two standard deviations, and close it when it
   reverts. If the cointegration breaks down (p-value drifts above 0.10) it stops
-  trading that pair.
+  trading that pair. The pair is re-selected inside each walk-forward fold using
+  only data available at the fold boundary, with a Benjamini-Hochberg correction
+  across the candidates, so the choice of what to trade is as causal as the
+  trading itself.
 - **A machine-learning signal.** A gradient-boosted classifier predicts whether
   each name is up or down tomorrow from eight lagged features. The predicted
   probability sets the position size, so a confident call gets a bigger bet. SHAP
@@ -112,10 +141,11 @@ tests/          unit tests
 ## Limitations
 
 The factor proxies are ETFs (SPY, IWM, VTV, VUG), not the Ken French research
-factors. Fine for a sanity check, swappable if I want the real thing. The pairs
-strategy picks its pair on the full sample and only the trading is causal, so a
-stricter version would re-pick the pair inside each fold. And again, none of this
-has traded a real dollar.
+factors. Fine for a sanity check, swappable if I want the real thing. The
+candidate-pair list itself is still hand-picked with hindsight (I chose pairs
+known to move together), even though selection among them is now causal per
+fold. Universe membership is today's list, so there is survivorship bias in the
+single names. And none of this has traded a real dollar.
 
 ## License
 

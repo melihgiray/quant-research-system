@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.5.0
+
+- Pair selection is now causal: each walk-forward fold re-runs the
+  Engle-Granger scan (with the FDR correction) on data available at the fold
+  boundary and trades the pair it would actually have chosen at the time. A
+  fold where no candidate survives stays flat. Previously the pair was picked
+  once on the full sample, which let the selection peek at the test years.
+  On real data 2016-2024 this fix reduced the pairs OOS Sharpe from 0.61 to
+  0.42 - the results got worse, which is the point: the difference was
+  look-ahead bias, not alpha.
+- Added a results section to the README: out-of-sample walk-forward table and
+  equity chart built from real yfinance data by `scripts/build_results.py`.
+  The script refuses to run on the synthetic fallback so published numbers
+  can never come from generated data.
+
 ## 0.4.0
 
 - Added an execution model (`backtest/execution.py`, CLI flag
