@@ -61,6 +61,35 @@ def test_pairs_signal_only_trades_two_legs():
     assert (np.sign(active["KO"]) == -np.sign(active["PEP"])).all()
 
 
+def test_causal_pairs_selection_ignores_data_after_fit_end():
+    # The pair chosen (and the weights through fit_end) must be identical
+    # whether or not the panel contains data after fit_end.
+    from quant_system.signals.mean_reversion import causal_pairs_weights
+    tickers = sorted({t for pair in PAIRS_CANDIDATES for t in pair})
+    full = load_price_data(tickers, "2017-01-01", "2023-12-31", use_synthetic=True)
+    fit_end = pd.Timestamp("2021-06-30")
+
+    truncated = load_price_data(tickers, "2017-01-01", "2023-12-31", use_synthetic=True)
+    cut = full.close.index[full.close.index <= fit_end]
+    truncated.close = truncated.close.loc[cut]
+    truncated.volume = truncated.volume.loc[cut]
+
+    w_full = causal_pairs_weights(full, fit_end, PAIRS_CANDIDATES, CFG.pairs)
+    w_trunc = causal_pairs_weights(truncated, fit_end, PAIRS_CANDIDATES, CFG.pairs)
+    pd.testing.assert_frame_equal(w_full.loc[:fit_end], w_trunc.loc[:fit_end])
+
+
+def test_causal_pairs_selection_flat_when_nothing_qualifies():
+    from quant_system.signals.mean_reversion import causal_pairs_weights
+    # Sector ETFs are not constructed to cointegrate; scanning fake candidate
+    # pairs from them should keep the book flat.
+    p = load_price_data(universe("sectors"), "2017-01-01", "2022-12-31",
+                        use_synthetic=True)
+    fake_candidates = [("XLB", "XLK"), ("XLU", "XLY")]
+    w = causal_pairs_weights(p, pd.Timestamp("2021-06-30"), fake_candidates, CFG.pairs)
+    assert (w == 0).all().all()
+
+
 def test_ml_features_have_no_future_leak():
     p = load_price_data(universe("largecaps"), "2018-01-01", "2022-12-31", use_synthetic=True)
     feats = compute_features(p, CFG.ml)

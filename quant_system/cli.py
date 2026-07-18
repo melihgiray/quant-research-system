@@ -32,7 +32,9 @@ from .backtest.capacity import sweep_capital, estimate_capacity, plot_capacity, 
 from .regime.detector import detect_regime, market_proxy_returns
 from .regime.switcher import apply_regime_sizing
 from .signals.momentum import cross_sectional_momentum
-from .signals.mean_reversion import find_cointegrated_pair, pairs_signal, scan_candidate_pairs
+from .signals.mean_reversion import (
+    causal_pairs_weights, find_cointegrated_pair, pairs_signal, scan_candidate_pairs,
+)
 from .performance.multiple_testing import fdr_report, fdr_summary_lines
 from .signals.ml_signal import train_predict, shap_feature_importance
 from .signals.cv import purged_cv_scores
@@ -88,9 +90,10 @@ def _momentum_weights_fn(cfg, regime, use_regime):
     return make
 
 
-def _pairs_weights_fn(cfg, pair):
+def _pairs_weights_fn(cfg):
     def make(pdata, fit_end):
-        return pairs_signal(pdata, pair, cfg.pairs)
+        return causal_pairs_weights(pdata, fit_end, PAIRS_CANDIDATES, cfg.pairs,
+                                    verbose=True)
     return make
 
 
@@ -116,21 +119,19 @@ def run_one_strategy(name: str, pdat, cfg: Config, regime, rf: float,
         sig_universe = sub
     elif name == "pairs":
         scanned = scan_candidate_pairs(pdat.close, PAIRS_CANDIDATES)
-        if scanned:
-            report = fdr_report([f"{a}/{b}" for a, b, _ in scanned],
-                                [p for _, _, p in scanned],
-                                alpha=cfg.pairs.coint_pvalue_max)
-            print("\n".join(fdr_summary_lines(report, cfg.pairs.coint_pvalue_max)))
-        best = find_cointegrated_pair(pdat.close, PAIRS_CANDIDATES,
-                                      cfg.pairs.coint_pvalue_max,
-                                      fdr_alpha=cfg.pairs.coint_pvalue_max)
-        if best is None:
-            print("[cli] pairs: no candidate survives the cointegration scan - skipping")
+        if not scanned:
+            print("[cli] pairs: no candidate pair has enough data - skipping")
             return None
-        a, b, pv = best
-        print(f"[cli] pairs: trading {a}/{b} (Engle-Granger p={pv:.2e})")
-        make = _pairs_weights_fn(cfg, (a, b))
-        signal_label = f"Pairs trade {a}/{b} (z>{cfg.pairs.entry_z})"
+        # Diagnostic only: the full-sample scan with the FDR correction. The
+        # selection that actually trades happens per walk-forward fold, on data
+        # available at each fold's boundary.
+        report = fdr_report([f"{a}/{b}" for a, b, _ in scanned],
+                            [p for _, _, p in scanned],
+                            alpha=cfg.pairs.coint_pvalue_max)
+        print("\n".join(fdr_summary_lines(report, cfg.pairs.coint_pvalue_max)))
+        print("[cli] pairs: selection is per fold (see [pairs] lines below)")
+        make = _pairs_weights_fn(cfg)
+        signal_label = f"Pairs trade, per-fold selection (z>{cfg.pairs.entry_z})"
         sig_universe = pdat
     elif name == "ml":
         sub = pdat.subset(universe("largecaps")) if any(

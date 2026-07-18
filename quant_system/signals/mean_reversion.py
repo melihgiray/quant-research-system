@@ -188,6 +188,51 @@ def pairs_signal(price_data, pair: Tuple[str, str],
     return weights
 
 
+def causal_pairs_weights(price_data, fit_end, candidates: Sequence[Tuple[str, str]],
+                         cfg: PairsConfig = None, verbose: bool = False) -> pd.DataFrame:
+    """Walk-forward callback: select the pair using data up to ``fit_end`` only.
+
+    The spread trading in :func:`pairs_signal` was always causal (rolling hedge
+    ratio and z-score, both lagged), but picking WHICH pair to trade used to
+    happen once on the full sample, which let the selection peek at the test
+    period. Here the Engle-Granger scan and the FDR correction run on prices
+    truncated at ``fit_end``, so each fold trades the pair it would actually
+    have chosen at the time. Different folds may trade different pairs, and a
+    fold where no candidate survives the scan simply stays flat.
+
+    Parameters
+    ----------
+    price_data : PriceData
+        Full panel (the returned weight matrix spans its whole index).
+    fit_end : Timestamp or None
+        Selection uses closes at or before this date. None means the full
+        sample (matching the old behaviour for non-walk-forward runs).
+    candidates : list[(str, str)]
+        Candidate pairs to scan.
+    cfg : PairsConfig
+        Trading and cointegration parameters.
+    verbose : bool
+        Print which pair the fold selected.
+    """
+    cfg = cfg or PairsConfig()
+    close = price_data.close
+    history = close if fit_end is None else close.loc[:fit_end]
+
+    best = find_cointegrated_pair(history, candidates, cfg.coint_pvalue_max,
+                                  fdr_alpha=cfg.coint_pvalue_max)
+    if best is None:
+        if verbose:
+            print(f"[pairs] no candidate survives the scan through "
+                  f"{'(full sample)' if fit_end is None else fit_end.date()}; staying flat")
+        return pd.DataFrame(0.0, index=close.index, columns=close.columns)
+
+    a, b, pvalue = best
+    if verbose:
+        when = "full sample" if fit_end is None else f"data through {fit_end.date()}"
+        print(f"[pairs] selected {a}/{b} on {when} (p={pvalue:.2e})")
+    return pairs_signal(price_data, (a, b), cfg)
+
+
 def single_asset_reversion(price_data, lookback: int = 21,
                            entry_z: float = 1.0, max_weight: float = 0.10) -> pd.DataFrame:
     """Single-name mean reversion: fade short-term z-score extremes.

@@ -9,6 +9,7 @@ from .momentum import cross_sectional_momentum, time_series_momentum
 from .mean_reversion import (
     find_cointegrated_pair,
     scan_candidate_pairs,
+    causal_pairs_weights,
     pairs_signal,
     single_asset_reversion,
 )
@@ -19,6 +20,7 @@ __all__ = [
     "time_series_momentum",
     "find_cointegrated_pair",
     "scan_candidate_pairs",
+    "causal_pairs_weights",
     "pairs_signal",
     "single_asset_reversion",
     "PurgedKFold",
