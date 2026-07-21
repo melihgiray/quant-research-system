@@ -102,6 +102,23 @@ class OptionsConfig:
     fd_time_bump: float = 1e-5
     fd_rate_bump: float = 1e-5
 
+    # --- chain hygiene -------------------------------------------------------
+    # Real chains are full of quotes nobody could trade. On a sample SPY chain
+    # roughly half the strikes had a zero bid. Each rule below removes a class
+    # of untradeable quote, and the loader reports how many rows each one took
+    # rather than quietly shrinking the data.
+    min_bid: float = 0.01            # a zero bid means no one is buying: not a price
+    max_spread_ratio: float = 0.60   # (ask-bid)/mid above this is not a usable quote
+    min_days_to_expiry: int = 1      # same-day expiries have degenerate time value
+    min_open_interest: int = 0       # raise to demand a real resting book
+
+    # --- surface -------------------------------------------------------------
+    # Arbitrage tolerances. Both are absolute, and deliberately small: the point
+    # is to flag violations, not to define them away.
+    butterfly_tolerance: float = 1e-6
+    calendar_tolerance: float = 1e-6
+    min_points_per_slice: int = 4    # fewer than this cannot describe a smile
+
 
 @dataclass(frozen=True)
 class WalkForwardConfig:

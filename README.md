@@ -70,6 +70,37 @@ There is also a single-stock **options** leg, currently at the pricing stage:
   information sits in rounding error. Prices outside the static no-arbitrage
   band return NaN with a reason code rather than a fabricated number, which is
   what you want when a real chain hands you a crossed or stale quote.
+- A **vol surface** in log-forward-moneyness and expiry, interpolated in total
+  variance (`sigma^2 * T`) rather than in vol. That coordinate choice is the
+  point: no-calendar-arbitrage is exactly "total variance rises with maturity",
+  so interpolating there preserves it, while interpolating in implied vol can
+  manufacture arbitrage from clean inputs.
+
+![SPY vol surface](docs/results/vol_surface_spy.png)
+
+Built from a live SPY chain with `python scripts/build_vol_surface.py`. Two
+things in that picture are worth stating plainly, because they are what the
+code had to survive:
+
+**Most quotes in a real chain are not prices.** Of 2,310 raw SPY quotes, 399
+were dropped: 219 with a zero bid (nobody is buying, so there is no market),
+138 already expired, 42 with a spread too wide to mean anything. Each filter
+reports its count rather than silently shrinking the dataset.
+
+**The arbitrage checks find real violations, and most of them are boring.** On
+that surface, 330 butterfly and 3 strike-monotonicity violations were flagged.
+But surfaces are built from mid prices and you cannot trade at mid, so each
+violation is graded against the bid-ask you would have to cross: only 61 of 330
+exceed the local spread. The rest are mid-price artifacts, not opportunities.
+The ones that do exceed it cluster in the 878-day LEAPS, where quotes go stale.
+Flagging without that grading would be alarmism; smoothing them away silently
+would be worse.
+
+There is no historical options data here. yfinance serves the current chain
+only, and a genuine EOD options history needs a paid feed (OptionMetrics,
+ORATS, CBOE DataShop). Rather than pretend otherwise, the surface work runs on
+live chains and anything requiring history runs on a generated chain labelled
+SYNTHETIC everywhere it appears, the same convention as the equity side.
 
 Around those:
 
@@ -121,9 +152,9 @@ Every number this project claims about itself comes from one command:
 ./scripts/verify.sh      # test count + line coverage
 ```
 
-At the current commit that is **117 tests passing, 60.4% line coverage**. The
+At the current commit that is **134 tests passing, 62.9% line coverage**. The
 uncovered part is mostly the CLI, the two network-dependent monitors, and
-plotting code; the pricing and analytics modules run 90%+.
+plotting code; the options pricing and surface modules run 90%+.
 
 One note on data. yfinance rate-limits hard, and Yahoo hands back 429s if you pull
 too much too fast. Prices get cached after the first good pull. If a pull fails,

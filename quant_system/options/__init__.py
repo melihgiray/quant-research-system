@@ -31,6 +31,15 @@ from .implied_vol import (
     implied_volatility_detailed,
     no_arbitrage_bounds,
 )
+from .chain import OptionChain, load_option_chain, synthetic_option_chain
+from .arbitrage import (
+    ArbitrageReport,
+    ArbitrageViolation,
+    check_surface,
+    check_butterfly,
+    check_calendar,
+)
+from .surface import VolSurface, build_surface, plot_surface
 
 __all__ = [
     "CALL",
@@ -49,4 +58,15 @@ __all__ = [
     "implied_volatility",
     "implied_volatility_detailed",
     "no_arbitrage_bounds",
+    "OptionChain",
+    "load_option_chain",
+    "synthetic_option_chain",
+    "ArbitrageReport",
+    "ArbitrageViolation",
+    "check_surface",
+    "check_butterfly",
+    "check_calendar",
+    "VolSurface",
+    "build_surface",
+    "plot_surface",
 ]

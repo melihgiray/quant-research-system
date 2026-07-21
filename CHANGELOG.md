@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.7.0 - options leg, phase 2 (vol surface)
+
+- `options/chain.py`: option chain ingestion from yfinance, plus a labelled
+  SYNTHETIC generator with a realistic skew and term structure. Hygiene filters
+  drop untradeable quotes (zero bid, crossed, spread too wide, expired) and
+  report the count per reason instead of silently shrinking the data. On a live
+  SPY chain that removed 399 of 2,310 raw quotes, 219 of them zero-bid.
+  Expiries are sampled across the term structure by default, since taking the
+  nearest few on a daily-expiry underlying gives no term structure at all.
+- `options/surface.py`: surface in log-forward-moneyness and expiry,
+  interpolated linearly in total variance and clamped rather than extrapolated
+  at the wings. Total variance is the right coordinate because the
+  no-calendar-arbitrage condition is exactly its monotonicity in maturity;
+  interpolating in implied vol instead can create arbitrage from clean inputs.
+- `options/arbitrage.py`: butterfly (convexity in strike), strike monotonicity
+  and calendar (total variance monotone in expiry) checks. Violations are
+  reported with location and magnitude, never smoothed away, and each is graded
+  against the local bid-ask spread: a violation smaller than the spread you
+  would have to cross is a mid-price artifact, not an opportunity. On live SPY,
+  330 butterfly violations were flagged and only 61 exceeded the local spread,
+  clustered in the 878-day LEAPS where quotes go stale.
+- Chain hygiene and surface tolerances added to `OptionsConfig`.
+- `scripts/build_vol_surface.py` reproduces the surface and plot. In live mode
+  it exits non-zero rather than falling back to synthetic data.
+- 17 new tests (134 total). The arbitrage tests run in both directions: a clean
+  synthetic surface must report zero violations, and injected butterfly and
+  calendar violations must each be caught.
+
 ## 0.6.0 - options leg, phase 1 (pricing and Greeks)
 
 - New `quant_system/options/` package:
