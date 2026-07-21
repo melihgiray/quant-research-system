@@ -1,10 +1,12 @@
 # quant-research-system
 
-A backtesting setup for a few systematic equity strategies on daily data. It runs
-three strategies through one engine, charges realistic trading costs, tests them
-out of sample, and prints the results. Nothing here connects to a broker and
-nothing trades live. I built it to find out whether these ideas survive once
-costs and proper out-of-sample testing get in the way.
+A backtesting setup for systematic equity and single-stock options strategies on
+daily data. It runs each strategy through an engine that charges realistic
+trading costs, tests them out of sample, and prints the results. Nothing here
+connects to a broker and nothing trades live. I built it to find out whether
+these ideas survive once costs and proper out-of-sample testing get in the way,
+and most of the interesting output is about how much of an edge the frictions
+eat.
 
 ## Results
 
@@ -53,7 +55,8 @@ Three strategies:
   scored with purged, embargoed cross-validation (`--cv`) so overlapping labels
   can't leak between the folds.
 
-There is also a single-stock **options** leg, currently at the pricing stage:
+There is also a single-stock **options** leg: pricing and Greeks, a vol surface
+built from live chains, and strategy backtests.
 
 - Black-Scholes for European singles, and a Cox-Ross-Rubinstein binomial tree
   for American early exercise. The tree checks exercise-versus-hold at every
@@ -101,6 +104,46 @@ only, and a genuine EOD options history needs a paid feed (OptionMetrics,
 ORATS, CBOE DataShop). Rather than pretend otherwise, the surface work runs on
 live chains and anything requiring history runs on a generated chain labelled
 SYNTHETIC everywhere it appears, the same convention as the equity side.
+
+### Option strategies
+
+Covered calls, cash-secured puts, and a delta-hedged short straddle, run
+through an event-driven engine that keeps the equity side's timing rule:
+**orders decided at the close of day T fill against day T+1's quotes.** Fills
+cross the spread (buy the ask, sell the bid), expiry settles physically so
+assignment leaves you holding or short the stock, and position Greeks are
+tracked daily.
+
+Reproduce with `python scripts/build_options_results.py`.
+
+| Strategy | Return | Ann. | Sharpe | Max DD | Trades | Spread paid |
+|---|---|---|---|---|---|---|
+| Buy and hold (benchmark) | +3.6% | +0.57% | 0.44 | -2.5% | 1 | $1 |
+| Covered call (30 delta) | +2.5% | +0.39% | 0.39 | -2.1% | 158 | $446 |
+| Cash-secured put (30 delta) | +0.8% | +0.12% | 0.26 | -1.5% | 157 | $404 |
+| Delta-hedged short straddle | -0.7% | -0.11% | -0.34 | -1.3% | 1345 | $1,833 |
+
+![Option strategies](docs/results/options_strategies.png)
+
+**These numbers are not evidence about markets.** The synthetic chain prices
+implied volatility at 15% above trailing realised, so the variance risk premium
+is an input, not a discovery. What the table shows is that the machinery
+harvests that premium correctly and then tells you what it costs to collect.
+The sweep makes the dependence explicit:
+
+| Implied over realised | Straddle return |
+|---|---|
+| +0% | -3.25% |
+| +15% | -0.71% |
+| +30% | +1.85% |
+| +50% | +5.31% |
+
+Read that as the real finding: at these spread assumptions, **implied has to
+exceed realised by roughly 20% before delta-hedged short volatility breaks
+even.** Below that the frictions win. The straddle pays $1,833 of spread across
+1,345 trades on $100k, which is why it trails a strategy that trades once. The
+covered call underperforming buy-and-hold is also correct rather than broken:
+capping your upside costs you exactly when the underlying rallies.
 
 Around those:
 
@@ -152,7 +195,7 @@ Every number this project claims about itself comes from one command:
 ./scripts/verify.sh      # test count + line coverage
 ```
 
-At the current commit that is **134 tests passing, 62.9% line coverage**. The
+At the current commit that is **149 tests passing, 66.6% line coverage**. The
 uncovered part is mostly the CLI, the two network-dependent monitors, and
 plotting code; the options pricing and surface modules run 90%+.
 

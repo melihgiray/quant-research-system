@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.8.0 - options leg, phase 3 (strategy backtests)
+
+- `options/book.py`: contracts, portfolio state and fill rules. Buys take the
+  ask and sells hit the bid, never the mid, which matters far more for options
+  than equities: single-stock options are routinely 2-5% wide, so a mid-filled
+  covered-call backtest overstates the premium it claims to collect by most of
+  that premium. Marks stay at mid so the spread is not double-counted.
+  Expiry settles physically, so an assigned short call delivers shares and an
+  assigned short put takes delivery.
+- `options/provider.py`: a chain of quotes through time, generated because
+  yfinance has no options history. Implied vol is trailing realised vol (lagged
+  a day, so the surface never peeks) times `(1 + vol_premium)`. That premium is
+  an explicit input, documented as an assumption rather than a finding.
+- `options/strategies.py`: covered call, cash-secured put, delta-hedged short
+  straddle, plus a buy-and-hold benchmark. Strategies read position state from
+  the book rather than tracking their own, so assignment cannot desynchronise
+  them.
+- `options/backtest.py`: event-driven engine holding the equity side's timing
+  rule. Orders decided at the close of T fill against T+1's quotes, enforced
+  structurally by a pending-order queue rather than by convention. Records
+  equity, daily Greeks, exposures, fills and assignment events.
+- Fixed a strategy bug the delta plot exposed: on a straddle roll the share
+  hedge was left on the books after every option leg was closed, leaving an
+  outright stock position. Unwinding it cut mean absolute delta from 17.4 to
+  11.4 shares and peak from about 150 to 86.
+- `scripts/build_options_results.py` reproduces the table, the premium sweep
+  and the plot.
+- 15 new tests (149 total). The look-ahead guard for the options path measures
+  the lag rather than asserting it: a strategy peeking one day ahead scores
+  Sharpe 0.11 because it trades after the move it foresaw, while the same
+  strategy peeking two days ahead scores 15.27. The gap is the one-day lag.
+
 ## 0.7.0 - options leg, phase 2 (vol surface)
 
 - `options/chain.py`: option chain ingestion from yfinance, plus a labelled
