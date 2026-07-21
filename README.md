@@ -53,6 +53,24 @@ Three strategies:
   scored with purged, embargoed cross-validation (`--cv`) so overlapping labels
   can't leak between the folds.
 
+There is also a single-stock **options** leg, currently at the pricing stage:
+
+- Black-Scholes for European singles, and a Cox-Ross-Rubinstein binomial tree
+  for American early exercise. The tree checks exercise-versus-hold at every
+  node, so an American put is correctly worth more than its European twin,
+  while an American call on a non-dividend payer collapses to the European
+  price (which is a free correctness check on the whole tree, and a test).
+- All five Greeks, closed-form where Black-Scholes provides one and central
+  finite differences where it does not (American options have no analytic
+  sensitivities). The two are asserted to agree across a grid of moneyness and
+  expiry, which tests both paths at once.
+- An implied-vol solver that says when it cannot answer. Deep in-the-money
+  options are routed through their out-of-the-money twin by put-call parity,
+  because nearly all of an ITM price is intrinsic and the volatility
+  information sits in rounding error. Prices outside the static no-arbitrage
+  band return NaN with a reason code rather than a fabricated number, which is
+  what you want when a real chain hands you a crossed or stale quote.
+
 Around those:
 
 - An engine that lags every signal by a day, so a position can never use a price
@@ -96,6 +114,16 @@ python -m quant_system.cli --strategy all --universe all
 Flags worth knowing: `--strategy {momentum,pairs,ml,all}`, `--synthetic`,
 `--no-walk-forward`, `--bootstrap`, `--capacity`, `--shap`, `--rf 0.04`. Run
 `pytest` for the test suite.
+
+Every number this project claims about itself comes from one command:
+
+```bash
+./scripts/verify.sh      # test count + line coverage
+```
+
+At the current commit that is **117 tests passing, 60.4% line coverage**. The
+uncovered part is mostly the CLI, the two network-dependent monitors, and
+plotting code; the pricing and analytics modules run 90%+.
 
 One note on data. yfinance rate-limits hard, and Yahoo hands back 429s if you pull
 too much too fast. Prices get cached after the first good pull. If a pull fails,

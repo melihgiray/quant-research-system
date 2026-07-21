@@ -22,3 +22,4 @@ reports/*.png
 # Secrets — never commit API keys / tokens
 .env
 .env.local
+.coverage.json

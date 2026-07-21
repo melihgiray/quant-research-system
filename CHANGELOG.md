@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.6.0 - options leg, phase 1 (pricing and Greeks)
+
+- New `quant_system/options/` package:
+  - `pricing.py`: Black-Scholes for Europeans, CRR binomial tree for American
+    early exercise. Degenerate corners (expiry, zero vol) return discounted
+    forward intrinsic instead of dividing by zero. The tree raises rather than
+    returning a plausible wrong number when the risk-neutral probability falls
+    outside (0,1).
+  - `greeks.py`: analytic Black-Scholes Greeks plus a generic central
+    finite-difference engine, used for American options where no closed form
+    exists. Units are stated explicitly (vega per 1.00 vol, theta per year)
+    with converters to the per-point and per-day quotes desks use.
+  - `implied_vol.py`: Brent solver with static no-arbitrage bound checks and
+    documented reason codes on failure. Deep ITM options are solved through
+    their OTM twin via put-call parity, where the price is all time value and
+    the problem is far better conditioned.
+- `OptionsConfig` added to `config.py`: rates, tree steps, solver bracket and
+  finite-difference bump sizes, so none of these are hard-coded.
+- 62 new tests (117 total). The pricing was cross-checked against numerical
+  quadrature of the risk-neutral expectation, agreeing to 3e-10.
+- `scripts/verify.sh` prints the test count and line coverage in one command,
+  so any figure quoted in the README or on a CV is reproducible.
+
 ## 0.5.0
 
 - Pair selection is now causal: each walk-forward fold re-runs the

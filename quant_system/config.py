@@ -71,6 +71,39 @@ class ExecutionConfig:
 
 
 @dataclass(frozen=True)
+class OptionsConfig:
+    """Option pricing, Greeks and implied-vol settings.
+
+    Conventions worth stating once, because half the confusion around Greeks is
+    unit confusion: vega is per 1.00 of volatility (not per vol point), theta is
+    per year (not per day), and rho is per 1.00 of rate. Helpers convert to the
+    per-point and per-day units traders actually quote.
+
+    risk_free_rate:    annual rate used when a caller does not supply one.
+    dividend_yield:    continuous annual dividend yield of the underlying.
+    binomial_steps:    CRR tree steps. 500 puts the American-vs-European gap
+                       well inside a cent for typical single-stock options.
+    iv_lower/iv_upper: bracket for the Brent implied-vol solve.
+    iv_tolerance:      absolute tolerance on the solved volatility.
+    fd_*_bump:         finite-difference step sizes. Spot is relative (a
+                       fraction of spot), the rest absolute. These are the
+                       classic bias/roundoff tradeoff: too small and floating
+                       point noise dominates, too large and truncation does.
+    """
+
+    risk_free_rate: float = 0.04
+    dividend_yield: float = 0.0
+    binomial_steps: int = 500
+    iv_lower: float = 1e-6
+    iv_upper: float = 5.0
+    iv_tolerance: float = 1e-8
+    fd_spot_bump: float = 1e-3
+    fd_vol_bump: float = 1e-4
+    fd_time_bump: float = 1e-5
+    fd_rate_bump: float = 1e-5
+
+
+@dataclass(frozen=True)
 class WalkForwardConfig:
     """Walk-forward validation windows (expanding by default).
 
@@ -192,6 +225,7 @@ class Config:
 
     cost: CostConfig = field(default_factory=CostConfig)
     execution: ExecutionConfig = field(default_factory=ExecutionConfig)
+    options: OptionsConfig = field(default_factory=OptionsConfig)
     walk_forward: WalkForwardConfig = field(default_factory=WalkForwardConfig)
     momentum: MomentumConfig = field(default_factory=MomentumConfig)
     pairs: PairsConfig = field(default_factory=PairsConfig)
