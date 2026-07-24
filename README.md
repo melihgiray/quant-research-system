@@ -99,11 +99,43 @@ The ones that do exceed it cluster in the 878-day LEAPS, where quotes go stale.
 Flagging without that grading would be alarmism; smoothing them away silently
 would be worse.
 
-There is no historical options data here. yfinance serves the current chain
-only, and a genuine EOD options history needs a paid feed (OptionMetrics,
-ORATS, CBOE DataShop). Rather than pretend otherwise, the surface work runs on
-live chains and anything requiring history runs on a generated chain labelled
-SYNTHETIC everywhere it appears, the same convention as the equity side.
+yfinance serves the current chain only, and a genuine multi-year EOD options
+history needs a paid feed (OptionMetrics, ORATS, CBOE DataShop). The one thing
+it is possible to get for free is a single-day snapshot, and there is a loader
+for the OptionsDX end-of-day format that reads one. The sample used here is SPY
+on 2020-03-06, the COVID crash Friday, in 31 intraday snapshots. That is not
+enough to backtest a strategy, so strategy backtests still run on the labelled
+SYNTHETIC chain. What one real, stressed day is good for is two things.
+
+**Validating the solver against someone else's.** The file ships vendor implied
+vols, so our Brent solver can be checked against an independent implementation
+on ~9,000 real quotes per snapshot. Near the money the two agree to about 2
+volatility points, and the gap is stable at 1.73 to 1.78 points across all 31
+snapshots. The wings diverge more (tens of points on short-dated out-of-the-money
+calls), which is expected: the vendor's rate, dividend and day-count assumptions
+are unknown, and SPY options are American while we price European, so an
+early-exercise premium sits in the in-the-money puts. We do not tune our solver
+to close that gap. Our solver also declines on 148 quotes whose mid sits below
+European intrinsic, where the vendor's model still prints a number, and that
+disagreement is itself informative rather than a bug. Reproduce with
+`python scripts/validate_optionsdx.py`.
+
+**Seeing a crisis surface.** The same day, priced through the surface builder:
+
+![SPY crisis vol surface](docs/results/vol_surface_spy_crisis.png)
+
+Put the term structure next to the calm 2026 live surface above and the
+difference is the whole story. Calm: upward sloping, 7d at 11.5% rising to 21% a
+year out. Crisis: **inverted**, 7d at 53% falling to 22% two years out, because
+the market is pricing acute near-term uncertainty that it expects to subside.
+The third panel tracks 30-day ATM vol against spot through the morning: they
+move opposite each other, tick for tick, which is the leverage effect in real
+time.
+
+The OptionsDX file is not committed (its terms are not confirmed for
+redistribution); the loader reads it from a path you provide, and a tiny
+hand-built schema clone under `tests/fixtures/` covers the tests so the suite
+needs no download.
 
 ### Option strategies
 
@@ -195,7 +227,7 @@ Every number this project claims about itself comes from one command:
 ./scripts/verify.sh      # test count + line coverage
 ```
 
-At the current commit that is **149 tests passing, 66.6% line coverage**. The
+At the current commit that is **161 tests passing, 67.4% line coverage**. The
 uncovered part is mostly the CLI, the two network-dependent monitors, and
 plotting code; the options pricing and surface modules run 90%+.
 

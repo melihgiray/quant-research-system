@@ -23,3 +23,10 @@ reports/*.png
 .env
 .env.local
 .coverage.json
+
+# Large local options-data samples (OptionsDX). Not redistributable here; the
+# committed test fixture is a tiny hand-built schema clone. See README.
+/data_cache/options/
+spy_sample*.csv
+!tests/fixtures/optionsdx_tiny.csv
+.coverage

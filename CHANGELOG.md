@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.9.0 - options leg, real chain data (one crisis day)
+
+- `options/history.py`: a loader for the OptionsDX end-of-day CSV format, which
+  is the free way to get a real historical option chain. It parses the wide
+  call-and-put-per-row layout into the repo's long quote schema, so a historical
+  snapshot feeds the surface builder exactly like a live chain. Empty vendor
+  fields become NaN, the absent open-interest column is left NaN rather than
+  faked, time-to-expiry comes from the fractional vendor DTE and is cross-checked
+  against the calendar difference, and the shared hygiene filters report their
+  drops the same way as live chains. Vendor Greeks and IVs are carried through as
+  validation material, not truth.
+- `scripts/validate_optionsdx.py`: checks our Brent implied-vol solver against
+  the vendor's IVs on a real SPY chain (2020-03-06, the COVID crash). Near the
+  money the two agree to about 2 vol points, stable at 1.73-1.78 points across
+  all 31 intraday snapshots; the wings diverge as expected from unknown vendor
+  rate/dividend assumptions and American-vs-European style. This is the
+  options-side analogue of the Phase 1 quadrature cross-check: independent
+  implementation agreement as evidence the solver is right on real quotes.
+- The same script draws `docs/results/vol_surface_spy_crisis.png`: the crisis
+  smile, the inverted ATM term structure (53% at 7d down to 22% at two years,
+  the opposite of the calm 2026 live surface), and intraday 30-day ATM vol
+  moving opposite spot.
+- Honesty notes kept explicit: one day is not enough to backtest, so strategy
+  backtests still use the synthetic chain; the OptionsDX file is not committed
+  (terms not confirmed for redistribution) and is read from a caller-supplied
+  path, with a hand-built schema-clone fixture under `tests/fixtures/` so the
+  suite needs no download.
+- 12 new tests (161 total), 11 offline against the fixture plus one real-file
+  regression guard that skips when the sample is absent.
+
 ## 0.8.0 - options leg, phase 3 (strategy backtests)
 
 - `options/book.py`: contracts, portfolio state and fill rules. Buys take the

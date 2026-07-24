@@ -40,6 +40,7 @@ from .arbitrage import (
     check_calendar,
 )
 from .surface import VolSurface, build_surface, plot_surface
+from .history import OptionsDayData, load_optionsdx_csv
 
 __all__ = [
     "CALL",
@@ -69,4 +70,6 @@ __all__ = [
     "VolSurface",
     "build_surface",
     "plot_surface",
+    "OptionsDayData",
+    "load_optionsdx_csv",
 ]
