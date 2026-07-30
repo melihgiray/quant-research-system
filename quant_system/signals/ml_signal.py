@@ -27,6 +27,7 @@ import numpy as np
 import pandas as pd
 
 from sklearn.ensemble import HistGradientBoostingClassifier
+from sklearn.metrics import get_scorer
 
 from ..config import MLConfig, TRADING_DAYS_PER_YEAR
 
@@ -35,6 +36,67 @@ FEATURE_NAMES: List[str] = [
     "mom_5", "mom_10", "mom_21", "zscore_21", "vol_21",
     "volume_ratio", "rsi_14", "dist_52w_high",
 ]
+
+
+def permutation_importance_pvalues(
+    model,
+    X,
+    y,
+    feature_names=None,
+    n_repeats: int = 199,
+    seed: int = 7,
+    scoring: str = "roc_auc",
+) -> pd.DataFrame:
+    """Estimate one-sided feature-importance p-values against a permutation null.
+
+    ``model`` must already be fitted, and ``X`` should be held-out data. For
+    each feature, importance is the mean score loss when that column is
+    shuffled. Its null distribution repeats the same calculation after
+    shuffling the labels, where no real feature-label relationship remains.
+    The returned p-value uses the finite-sample ``+1`` correction, so it is
+    never zero.
+    """
+    values = np.asarray(X)
+    labels = np.asarray(y)
+    if values.ndim != 2:
+        raise ValueError("X must be a two-dimensional feature matrix")
+    if len(values) != len(labels):
+        raise ValueError("X and y must contain the same number of rows")
+    if n_repeats < 1:
+        raise ValueError("n_repeats must be positive")
+
+    if feature_names is None:
+        feature_names = list(getattr(X, "columns", range(values.shape[1])))
+    if len(feature_names) != values.shape[1]:
+        raise ValueError("feature_names must match the number of columns in X")
+
+    scorer = get_scorer(scoring)
+    observed_score = scorer(model, values, labels)
+    rng = np.random.default_rng(seed)
+    observed_drops = np.empty((n_repeats, values.shape[1]))
+    null_drops = np.empty_like(observed_drops)
+
+    for repeat in range(n_repeats):
+        null_labels = labels[rng.permutation(len(labels))]
+        null_score = scorer(model, values, null_labels)
+        for column in range(values.shape[1]):
+            shuffled = values.copy()
+            shuffled[:, column] = shuffled[rng.permutation(len(values)), column]
+            observed_drops[repeat, column] = (
+                observed_score - scorer(model, shuffled, labels)
+            )
+            null_drops[repeat, column] = (
+                null_score - scorer(model, shuffled, null_labels)
+            )
+
+    importance = observed_drops.mean(axis=0)
+    p_values = (
+        1 + (null_drops >= importance[np.newaxis, :]).sum(axis=0)
+    ) / (n_repeats + 1)
+    return pd.DataFrame(
+        {"importance": importance, "p_value": p_values},
+        index=pd.Index(feature_names, name="feature"),
+    ).sort_values("importance", ascending=False)
 
 
 def _rsi(close: pd.Series, span: int = 14) -> pd.Series:
