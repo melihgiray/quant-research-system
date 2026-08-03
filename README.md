@@ -53,7 +53,10 @@ Three strategies:
   probability sets the position size, so a confident call gets a bigger bet. SHAP
   values show which features it actually leans on, and the classifier can be
   scored with purged, embargoed cross-validation (`--cv`) so overlapping labels
-  can't leak between the folds.
+  can't leak between the folds. Which features carry real signal is decided by a
+  permutation-null p-value per feature, Benjamini-Hochberg corrected across the
+  eight (`--feature-fdr`), so a feature that only looks significant because eight
+  were tested gets demoted.
 
 There is also a single-stock **options** leg: pricing and Greeks, a vol surface
 built from live chains, and strategy backtests.
