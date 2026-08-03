@@ -32,10 +32,10 @@ they merge. The list is a guide, not a quota.
 - [x] Bootstrap confidence intervals for Sharpe and CAGR.
 - [x] Capacity / cost-sensitivity sweep over capital.
 - [x] Multiple-testing control (Benjamini-Hochberg) on the pairs scan.
-- [ ] Extend the FDR control to the ML feature search.
+- [x] Extend the FDR control to the ML feature search.
   1. Per-feature importance p-values (permutation null) + test.
   2. Apply the existing Benjamini-Hochberg pass across features + test.
-  3. Surface surviving features in the ML summary and CLI.
+  3. Surface surviving features in the ML summary and CLI (`--feature-fdr`).
   4. Docstrings, changelog, README numbers.
 
 ## Realism and portfolio construction
