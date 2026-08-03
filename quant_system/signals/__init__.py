@@ -14,6 +14,7 @@ from .mean_reversion import (
     single_asset_reversion,
 )
 from .cv import PurgedKFold, purged_cv_scores, pooled_frame
+from .ml_signal import permutation_importance_pvalues
 
 __all__ = [
     "cross_sectional_momentum",
@@ -26,4 +27,5 @@ __all__ = [
     "PurgedKFold",
     "purged_cv_scores",
     "pooled_frame",
+    "permutation_importance_pvalues",
 ]
