@@ -14,7 +14,7 @@ from .mean_reversion import (
     single_asset_reversion,
 )
 from .cv import PurgedKFold, purged_cv_scores, pooled_frame
-from .ml_signal import permutation_importance_pvalues
+from .ml_signal import permutation_importance_pvalues, ml_feature_significance
 from .feature_selection import fdr_control_features, feature_fdr_summary
 
 __all__ = [
@@ -29,6 +29,7 @@ __all__ = [
     "purged_cv_scores",
     "pooled_frame",
     "permutation_importance_pvalues",
+    "ml_feature_significance",
     "fdr_control_features",
     "feature_fdr_summary",
 ]

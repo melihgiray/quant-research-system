@@ -287,3 +287,56 @@ def shap_feature_importance(price_data, cfg: MLConfig = None, fit_end=None,
 
     importance = pd.Series(imp, index=FEATURE_NAMES).sort_values(ascending=False)
     return ShapResult(importance=importance, method=method)
+
+
+def ml_feature_significance(price_data, cfg: MLConfig = None, fit_end=None,
+                            alpha: float = 0.10, holdout: float = 0.3,
+                            n_repeats: int = 199, seed: int = 7) -> Optional[pd.DataFrame]:
+    """Which ML features carry real signal, after correcting for the multiple test.
+
+    Ranking features by importance is not enough: with eight of them, testing
+    each raises the chance one clears p < 0.05 by luck. This builds the pooled
+    training set up to ``fit_end``, splits it into a fit portion and a held-out
+    portion, fits the gradient-boosting model, scores each feature's
+    permutation-null p-value on the held-out data, and applies a
+    Benjamini-Hochberg correction across the eight features.
+
+    This is a diagnostic on the training data (a random fit/holdout split of the
+    pooled rows), not part of the traded signal, so a plain split is enough.
+    Permutation importance is measured on the held-out portion so the numbers are
+    not read off the data the model memorised.
+
+    Returns
+    -------
+    pd.DataFrame or None
+        Columns ``importance``, ``p_value``, ``q_value``, ``keep`` indexed by
+        feature, or None if there is not enough data to fit and hold out.
+    """
+    from .feature_selection import fdr_control_features
+
+    cfg = cfg or MLConfig()
+    if fit_end is None:
+        fit_end = price_data.close.index[-1]
+    features = compute_features(price_data, cfg)
+    rets = price_data.returns()
+    X, y = _pooled_training_set(features, rets, fit_end, cfg.train_window)
+    if X is None or len(np.unique(y)) < 2:
+        return None
+
+    rng = np.random.default_rng(seed)
+    order = rng.permutation(len(X))
+    cut = int(len(X) * (1.0 - holdout))
+    train_idx, test_idx = order[:cut], order[cut:]
+    if len(test_idx) < 50 or len(np.unique(y[train_idx])) < 2 \
+            or len(np.unique(y[test_idx])) < 2:
+        return None
+
+    model = HistGradientBoostingClassifier(
+        max_depth=3, learning_rate=0.05, max_iter=300,
+        l2_regularization=1.0, random_state=seed,
+    )
+    model.fit(X[train_idx], y[train_idx])
+    pvalues = permutation_importance_pvalues(
+        model, X[test_idx], y[test_idx], feature_names=FEATURE_NAMES,
+        n_repeats=n_repeats, seed=seed)
+    return fdr_control_features(pvalues, alpha=alpha)
