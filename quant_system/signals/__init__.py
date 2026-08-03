@@ -15,6 +15,7 @@ from .mean_reversion import (
 )
 from .cv import PurgedKFold, purged_cv_scores, pooled_frame
 from .ml_signal import permutation_importance_pvalues
+from .feature_selection import fdr_control_features, feature_fdr_summary
 
 __all__ = [
     "cross_sectional_momentum",
@@ -28,4 +29,6 @@ __all__ = [
     "purged_cv_scores",
     "pooled_frame",
     "permutation_importance_pvalues",
+    "fdr_control_features",
+    "feature_fdr_summary",
 ]
