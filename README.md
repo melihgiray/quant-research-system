@@ -227,7 +227,7 @@ Every number this project claims about itself comes from one command:
 ./scripts/verify.sh      # test count + line coverage
 ```
 
-At the current commit that is **161 tests passing, 67.4% line coverage**. The
+At the current commit that is **172 tests passing, 67.8% line coverage**. The
 uncovered part is mostly the CLI, the two network-dependent monitors, and
 plotting code; the options pricing and surface modules run 90%+.
 
