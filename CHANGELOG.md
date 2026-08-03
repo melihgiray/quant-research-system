@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.10.0 - false-discovery-rate control on the ML feature search
+
+- `signals/ml_signal.py` gains `permutation_importance_pvalues`: a one-sided
+  p-value per feature against a permutation null (shuffle the label, no real
+  feature-label relationship remains), with the finite-sample +1 correction so a
+  p-value is never exactly zero.
+- `signals/feature_selection.py`: a Benjamini-Hochberg pass over those p-values,
+  the same correction already used for the pairs scan, reporting a q-value and a
+  keep flag per feature.
+- `signals/ml_signal.py` gains `ml_feature_significance`, the end-to-end
+  diagnostic: build the pooled training set, split off a held-out portion, fit
+  the model, score permutation-null p-values on the held-out data, and FDR-correct
+  across the eight features. New `--feature-fdr` CLI flag prints it.
+- The point of the correction, on synthetic data: only `zscore_21` survives
+  (q=0.04), while `mom_5` has a raw p=0.035 that looks significant on its own but
+  is demoted to q=0.14 and dropped once the eight-way test is accounted for.
+- 11 new tests (172 total).
+
 ## 0.9.0 - options leg, real chain data (one crisis day)
 
 - `options/history.py`: a loader for the OptionsDX end-of-day CSV format, which
