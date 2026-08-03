@@ -36,7 +36,10 @@ from .signals.mean_reversion import (
     causal_pairs_weights, find_cointegrated_pair, pairs_signal, scan_candidate_pairs,
 )
 from .performance.multiple_testing import fdr_report, fdr_summary_lines
-from .signals.ml_signal import train_predict, shap_feature_importance
+from .signals.ml_signal import (
+    train_predict, shap_feature_importance, ml_feature_significance,
+)
+from .signals.feature_selection import feature_fdr_summary
 from .signals.cv import purged_cv_scores
 from .performance.tearsheet import format_tearsheet, save_report_plots
 from .performance.factor_decomp import factor_decomposition
@@ -209,6 +212,8 @@ def main(argv: Optional[List[str]] = None) -> int:
                    help="run a capital/cost-sensitivity sweep on the momentum book")
     p.add_argument("--cv", action="store_true",
                    help="score the ML classifier with purged, embargoed K-fold CV")
+    p.add_argument("--feature-fdr", action="store_true",
+                   help="permutation-null p-value per ML feature, FDR-corrected")
     p.add_argument("--max-participation", type=float, default=None, metavar="FRAC",
                    help="cap daily trading in a name at this fraction of its ADV "
                         "(e.g. 0.05); unfilled amounts carry to later days")
@@ -270,6 +275,17 @@ def main(argv: Optional[List[str]] = None) -> int:
                                      seed=cfg.random_seed)
         if sh is not None:
             print("\n".join(sh.summary()))
+
+    # ---- feature-significance FDR (optional, ML only) ----
+    if args.feature_fdr:
+        print("\n[cli] ML feature significance (permutation null, FDR)...")
+        fdr_universe = pdat.subset(universe("largecaps")) if any(
+            t in pdat.close.columns for t in universe("largecaps")) else pdat
+        report = ml_feature_significance(fdr_universe, cfg.ml, seed=cfg.random_seed)
+        if report is not None:
+            print("\n".join(feature_fdr_summary(report, cfg.pairs.coint_pvalue_max)))
+        else:
+            print("[cli] not enough data for the feature scan")
 
     # ---- plots ----
     market_level = (1.0 + market_proxy_returns(pdat, FACTOR_ETFS["market"]).fillna(0.0)).cumprod()
