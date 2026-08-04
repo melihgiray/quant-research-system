@@ -10,9 +10,12 @@ is about to earn.
 
 from __future__ import annotations
 
-from typing import Dict
+from typing import Dict, Optional
 
+import numpy as np
 import pandas as pd
+
+from ..config import TRADING_DAYS_PER_YEAR
 
 
 def combine_weights(weights_by_sleeve: Dict[str, pd.DataFrame],
@@ -92,3 +95,49 @@ def inverse_vol_allocations(sleeve_returns: Dict[str, pd.Series],
     inv = 1.0 / vol.where(vol > 0)                      # NaN where vol missing/zero
     alloc = inv.div(inv.sum(axis=1), axis=0)            # normalise over available sleeves
     return alloc.fillna(0.0)
+
+
+def blend_returns(sleeve_returns: Dict[str, pd.Series],
+                  allocations: Optional[pd.DataFrame] = None,
+                  lookback: int = 63,
+                  min_periods: int = 20) -> pd.Series:
+    """Blend sleeve return streams into one book via daily allocations.
+
+    Each day's blended return is the allocation-weighted sum of the sleeve
+    returns. When ``allocations`` is omitted, inverse-vol allocations are
+    computed from the same streams, which is causal (the allocation for day t
+    uses vol through t-1, then earns day t's return).
+
+    Returns
+    -------
+    pd.Series
+        The blended (pre vol-target) return stream.
+    """
+    frame = _sleeve_frame(sleeve_returns)
+    if allocations is None:
+        allocations = inverse_vol_allocations(
+            sleeve_returns, lookback=lookback, min_periods=min_periods)
+    alloc = allocations.reindex(index=frame.index, columns=frame.columns).fillna(0.0)
+    return (frame.fillna(0.0) * alloc).sum(axis=1)
+
+
+def volatility_target(returns: pd.Series,
+                      target_vol: float = 0.10,
+                      lookback: int = TRADING_DAYS_PER_YEAR,
+                      max_leverage: float = 3.0) -> pd.Series:
+    """Scale a return stream so its trailing annualised vol tracks ``target_vol``.
+
+    The return-stream analogue of ``risk.sizing.vol_target_scale``: estimate the
+    stream's realised annualised vol over a trailing window, multiply by
+    target/realised, lag the scaler one day (size today on vol known through
+    yesterday), and cap the multiplier at ``max_leverage``.
+
+    Returns
+    -------
+    pd.Series
+        The vol-targeted return stream, on the same index as ``returns``.
+    """
+    realised = returns.rolling(lookback, min_periods=lookback // 4).std() * np.sqrt(TRADING_DAYS_PER_YEAR)
+    scaler = (target_vol / realised).replace([np.inf, -np.inf], np.nan)
+    scaler = scaler.clip(upper=max_leverage).shift(1)   # size today on yesterday's vol
+    return returns.mul(scaler)

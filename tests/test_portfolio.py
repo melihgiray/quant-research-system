@@ -5,8 +5,10 @@ import pandas as pd
 import pytest
 
 from quant_system.portfolio.allocator import (
+    blend_returns,
     combine_weights,
     inverse_vol_allocations,
+    volatility_target,
 )
 
 
@@ -77,3 +79,49 @@ def test_combine_weights_requires_allocation_column():
     wb = pd.DataFrame({"SPY": [1.0, 1.0]}, index=idx)
     with pytest.raises(ValueError, match="no allocation column"):
         combine_weights({"b": wb}, alloc)
+
+
+def test_blend_with_given_allocations_is_weighted_sum():
+    idx = pd.bdate_range("2021-01-01", periods=3)
+    streams = {"a": pd.Series([0.01, 0.02, -0.01], index=idx),
+               "b": pd.Series([0.00, -0.01, 0.03], index=idx)}
+    alloc = pd.DataFrame({"a": [0.5, 0.5, 0.5], "b": [0.5, 0.5, 0.5]}, index=idx)
+    out = blend_returns(streams, allocations=alloc)
+    expected = [0.005, 0.005, 0.01]                                  # simple mean each day
+    assert out.tolist() == pytest.approx(expected)
+
+
+def test_blend_defaults_to_inverse_vol_and_is_causal():
+    streams = _streams()
+    out = blend_returns(streams, lookback=40, min_periods=20)
+    # Early rows have no allocation, so the blended return is 0 there.
+    assert out.iloc[0] == 0.0
+    # Tampering with the far tail must not change early blended returns.
+    tampered = {k: v.copy() for k, v in streams.items()}
+    tampered["jumpy"].iloc[300:] *= 5
+    out2 = blend_returns(tampered, lookback=40, min_periods=20)
+    pd.testing.assert_series_equal(out.iloc[:300], out2.iloc[:300])
+
+
+def test_volatility_target_moves_realised_vol_toward_target():
+    rng = np.random.default_rng(3)
+    idx = pd.bdate_range("2018-01-01", periods=1000)
+    raw = pd.Series(rng.normal(0.0, 0.03, 1000), index=idx)         # ~48% annual vol
+    scaled = volatility_target(raw, target_vol=0.10, lookback=126, max_leverage=5.0)
+    tail = scaled.iloc[300:]
+    realised = tail.std() * np.sqrt(252)
+    assert 0.06 < realised < 0.14                                   # near the 10% target
+    assert realised < raw.iloc[300:].std() * np.sqrt(252)          # scaled the book down
+
+
+def test_volatility_target_is_causal():
+    rng = np.random.default_rng(4)
+    idx = pd.bdate_range("2018-01-01", periods=600)
+    raw = pd.Series(rng.normal(0.0, 0.02, 600), index=idx)
+    base = volatility_target(raw, lookback=100)
+    tampered = raw.copy()
+    tampered.iloc[400:] *= 8
+    after = volatility_target(tampered, lookback=100)
+    # Scaler is lagged, so day t depends only on returns through t-1; days up to
+    # 400 use the untouched history and the scaled return equals raw*scaler there.
+    pd.testing.assert_series_equal(base.iloc[:400], after.iloc[:400])
