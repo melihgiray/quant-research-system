@@ -15,6 +15,45 @@ from typing import Dict
 import pandas as pd
 
 
+def combine_weights(weights_by_sleeve: Dict[str, pd.DataFrame],
+                    allocations: pd.DataFrame) -> pd.DataFrame:
+    """Stitch per-sleeve weight matrices into one book on a shared ticker set.
+
+    Each sleeve holds its own date x ticker weights (its book scaled to its own
+    gross). ``allocations`` says how much of the portfolio each sleeve gets on a
+    given day. The combined weight of a ticker is the allocation-weighted sum of
+    that ticker's weight across the sleeves that trade it, over the union of all
+    tickers. Sleeves trade different universes, so most cells are 0 for a sleeve.
+
+    Parameters
+    ----------
+    weights_by_sleeve : dict[str, pd.DataFrame]
+        One date x ticker weight matrix per sleeve, keyed by name. Keys must
+        match the columns of ``allocations``.
+    allocations : pd.DataFrame
+        Date x sleeve capital allocation, e.g. from ``inverse_vol_allocations``.
+
+    Returns
+    -------
+    pd.DataFrame
+        Combined date x ticker weights on the union of tickers, aligned to the
+        allocation index.
+    """
+    if not weights_by_sleeve:
+        raise ValueError("need at least one sleeve")
+    missing = set(weights_by_sleeve) - set(allocations.columns)
+    if missing:
+        raise ValueError(f"no allocation column for sleeves: {sorted(missing)}")
+
+    tickers = sorted({t for w in weights_by_sleeve.values() for t in w.columns})
+    index = allocations.index
+    combined = pd.DataFrame(0.0, index=index, columns=tickers)
+    for name, weights in weights_by_sleeve.items():
+        aligned = weights.reindex(index=index, columns=tickers).fillna(0.0)
+        combined = combined.add(aligned.mul(allocations[name], axis=0), fill_value=0.0)
+    return combined
+
+
 def _sleeve_frame(sleeve_returns: Dict[str, pd.Series]) -> pd.DataFrame:
     """Align a dict of sleeve return series into one date x sleeve frame."""
     if not sleeve_returns:

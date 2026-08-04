@@ -4,7 +4,10 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from quant_system.portfolio.allocator import inverse_vol_allocations
+from quant_system.portfolio.allocator import (
+    combine_weights,
+    inverse_vol_allocations,
+)
 
 
 def _streams(n=400, seed=0):
@@ -46,3 +49,31 @@ def test_allocation_is_causal():
 def test_empty_input_raises():
     with pytest.raises(ValueError, match="at least one sleeve"):
         inverse_vol_allocations({})
+
+
+def test_combine_weights_is_allocation_weighted_sum():
+    idx = pd.bdate_range("2021-01-01", periods=3)
+    alloc = pd.DataFrame({"a": [0.25, 0.5, 0.5], "b": [0.75, 0.5, 0.5]}, index=idx)
+    wa = pd.DataFrame({"AAPL": [1.0, 1.0, 1.0]}, index=idx)          # a holds AAPL
+    wb = pd.DataFrame({"MSFT": [1.0, 1.0, 1.0]}, index=idx)          # b holds MSFT
+    out = combine_weights({"a": wa, "b": wb}, alloc)
+    assert list(out.columns) == ["AAPL", "MSFT"]                     # union, sorted
+    assert out["AAPL"].tolist() == pytest.approx([0.25, 0.5, 0.5])
+    assert out["MSFT"].tolist() == pytest.approx([0.75, 0.5, 0.5])
+
+
+def test_combine_weights_overlapping_ticker_adds():
+    idx = pd.bdate_range("2021-01-01", periods=2)
+    alloc = pd.DataFrame({"a": [0.4, 0.4], "b": [0.6, 0.6]}, index=idx)
+    wa = pd.DataFrame({"SPY": [1.0, 1.0]}, index=idx)
+    wb = pd.DataFrame({"SPY": [-1.0, -1.0]}, index=idx)              # opposite side
+    out = combine_weights({"a": wa, "b": wb}, alloc)
+    assert out["SPY"].tolist() == pytest.approx([-0.2, -0.2])        # 0.4 - 0.6
+
+
+def test_combine_weights_requires_allocation_column():
+    idx = pd.bdate_range("2021-01-01", periods=2)
+    alloc = pd.DataFrame({"a": [1.0, 1.0]}, index=idx)
+    wb = pd.DataFrame({"SPY": [1.0, 1.0]}, index=idx)
+    with pytest.raises(ValueError, match="no allocation column"):
+        combine_weights({"b": wb}, alloc)
