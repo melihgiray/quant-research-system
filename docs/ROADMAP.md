@@ -45,7 +45,7 @@ they merge. The list is a guide, not a quota.
   2. Add a next-open fill mode to the engine + test.
   3. Config flag and CLI wiring.
   4. Docs and changelog.
-- [ ] Combine the three strategies into one book with volatility targeting.
+- [x] Combine the three strategies into one book with volatility targeting.
   1. Inverse-vol / equal-risk allocator as a pure function + test.
   2. Stitch the three sleeves into one weight matrix + test.
   3. Vol-target the combined book through `risk/sizing` + test.
