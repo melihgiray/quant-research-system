@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.11.0 - combine the three sleeves into one vol-targeted book
+
+- `portfolio/allocator.py`: a new package for running the momentum, pairs and ML
+  sleeves as one book. `inverse_vol_allocations` splits capital across sleeves
+  inversely to trailing volatility (risk parity), lagged a day so the weight for
+  a given day uses only vol known through the prior day; a sleeve still warming
+  up gets zero and the rest are renormalised.
+- `combine_weights` stitches per-sleeve weight matrices into one book on the
+  union of tickers, as the allocation-weighted sum of each sleeve's weights.
+- `blend_returns` blends the sleeve return streams by those allocations, and
+  `volatility_target` scales the blended stream to a target annual vol using the
+  same lagged, capped convention as `risk.sizing.vol_target_scale`.
+- `scripts/build_blend_results.py` runs the real-data walk-forward for all three
+  sleeves and combines them. The honest result: the vol target lands at 9.5%
+  against a 10% aim, but equal-risk allocation gives the negative-edge ML sleeve
+  the same risk budget as the positive pairs sleeve, so the blend prints a -0.33
+  Sharpe. A naive equal-weight blend scores -0.30 over the same span, so risk
+  parity is not the culprit; a losing sleeve is. Documented as such in the README.
+- 12 new tests (184 total).
+
 ## 0.10.0 - false-discovery-rate control on the ML feature search
 
 - `signals/ml_signal.py` gains `permutation_importance_pvalues`: a one-sided
