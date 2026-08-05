@@ -34,6 +34,32 @@ re-selecting the pair inside each walk-forward fold, which is the only thing
 you could actually do in real time, deflates it to 0.42. The gap between those
 two numbers is measured look-ahead bias.
 
+### Combining the sleeves into one book
+
+The three strategies trade different universes, so they can run together as one
+book. Capital is split across them by inverse volatility, a risk-parity
+weighting that gives each sleeve a similar risk budget, and the combined stream
+is then scaled to a 10% annual volatility target. Both steps are causal: the
+allocation for a day uses trailing sleeve volatility through the prior day, and
+the vol-target scaler is lagged the same way. Each sleeve's returns already net
+its own costs, so this is a fund-of-strategies over net streams, not a re-costed
+super-book. Reproduce with `python scripts/build_blend_results.py`.
+
+| Book | OOS Sharpe | Ann. return | Ann. vol | Max drawdown |
+|---|---|---|---|---|
+| Blended (inverse-vol, vol-targeted) | -0.33 | -3.5% | 9.5% | -29.0% |
+
+![Blended book vs sleeves](docs/results/equity_blend.png)
+
+Two honest readings. The volatility target works: realised vol lands at 9.5%
+against the 10% aim. The allocation does not save the book, because equal-risk
+weighting gives the negative-edge ML sleeve the same risk budget as the positive
+pairs sleeve, so the blend inherits the drag and prints a -0.33 Sharpe. A naive
+equal-weight blend scores -0.30 over the same span, so inverse-vol is not the
+problem here; a sleeve that loses money out of sample is. Risk parity balances
+risk, it does not decide which sleeves deserve capital, and skill-weighting the
+sleeves is a separate piece of work.
+
 ## What's in it
 
 Three strategies:
