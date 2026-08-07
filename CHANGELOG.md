@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.12.0 - hierarchical risk parity, measured against inverse-variance
+
+- `portfolio/hrp.py`: Hierarchical Risk Parity (Lopez de Prado, 2016).
+  `correlation_distance` maps correlation to a proper distance; `cluster_order`
+  quasi-diagonalises via single-linkage clustering on that distance;
+  `recursive_bisection` splits the risk budget down the clustered order; and
+  `hrp_weights` ties them together into long-only weights. `inverse_variance_weights`
+  is the 1/var baseline it is measured against. No covariance matrix is inverted.
+- `scripts/build_hrp_results.py`: a rolling monthly-rebalanced, causal,
+  trailing-year-covariance contest on the 44-name universe, gross of costs.
+  Result: HRP prints the best Sharpe (1.15 vs 0.97 for inverse-variance and 1.10
+  for equal weight), the lowest realised vol (13.5%) and the shallowest drawdown,
+  which is what the paper claims. The honest twist is concentration: HRP's
+  effective N (1 / Herfindahl) is lower than inverse-variance's, so it is more
+  concentrated by name yet realises less risk, because it diversifies in risk
+  space rather than by owning a little of everything.
+- 8 new tests (192 total).
+
 ## 0.11.0 - combine the three sleeves into one vol-targeted book
 
 - `portfolio/allocator.py`: a new package for running the momentum, pairs and ML
