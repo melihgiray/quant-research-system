@@ -51,7 +51,7 @@ they merge. The list is a guide, not a quota.
   3. Vol-target the combined book through `risk/sizing` + test.
   4. A results script + a README row for the blended book.
   5. Docs and changelog.
-- [ ] Hierarchical risk parity allocator, compared against inverse-variance.
+- [x] Hierarchical risk parity allocator, compared against inverse-variance.
   1. Correlation-distance and tree clustering helper + test.
   2. Recursive bisection allocation + test.
   3. A script comparing HRP against inverse-variance, with a plot.
