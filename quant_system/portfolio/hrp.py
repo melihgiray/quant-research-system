@@ -46,3 +46,69 @@ def cluster_order(corr: pd.DataFrame, method: str = "single") -> List[str]:
     link = linkage(condensed, method=method)
     order = leaves_list(link)
     return [corr.index[i] for i in order]
+
+
+def inverse_variance_weights(cov: pd.DataFrame) -> pd.Series:
+    """Inverse-variance (naive risk parity) weights: w_i proportional to 1/var_i.
+
+    The baseline HRP is measured against. It ignores correlation entirely, so two
+    near-duplicate assets each get their full 1/var share and the pair ends up
+    over-weighted.
+    """
+    ivar = 1.0 / np.diag(cov.to_numpy())
+    w = ivar / ivar.sum()
+    return pd.Series(w, index=cov.index)
+
+
+def _cluster_variance(cov: pd.DataFrame, items: List[str]) -> float:
+    """Variance of the inverse-variance sub-portfolio over ``items``."""
+    sub = cov.loc[items, items]
+    w = inverse_variance_weights(sub).to_numpy()
+    return float(w @ sub.to_numpy() @ w)
+
+
+def recursive_bisection(cov: pd.DataFrame, order: List[str]) -> pd.Series:
+    """Split the risk budget down the clustered order (Lopez de Prado, 2016).
+
+    Walk the ordered assets top down. At each step split the current block in
+    half and give each half a share of its parent's budget inversely to the
+    half's inverse-variance-portfolio variance, so the riskier half is trimmed.
+    Recurse until every block is a single asset. Weights are long-only and sum
+    to 1.
+    """
+    weights = pd.Series(1.0, index=order)
+    clusters = [order]
+    while clusters:
+        clusters = [block[half:stop]
+                    for block in clusters
+                    for half, stop in ((0, len(block) // 2), (len(block) // 2, len(block)))
+                    if len(block) > 1]
+        for i in range(0, len(clusters), 2):
+            left, right = clusters[i], clusters[i + 1]
+            var_left = _cluster_variance(cov, left)
+            var_right = _cluster_variance(cov, right)
+            alpha = 1.0 - var_left / (var_left + var_right)      # more budget to the calmer half
+            weights[left] *= alpha
+            weights[right] *= 1.0 - alpha
+    return weights
+
+
+def hrp_weights(returns: Optional[pd.DataFrame] = None,
+                *,
+                cov: Optional[pd.DataFrame] = None,
+                corr: Optional[pd.DataFrame] = None,
+                method: str = "single") -> pd.Series:
+    """Full Hierarchical Risk Parity weights.
+
+    Pass a returns frame (cov and corr are estimated from it), or pass ``cov``
+    and ``corr`` directly. Clusters on the correlation distance, reorders so
+    similar assets are adjacent, then splits the risk budget by recursive
+    bisection. Returns long-only weights summing to 1, indexed like ``cov``.
+    """
+    if cov is None or corr is None:
+        if returns is None:
+            raise ValueError("pass returns, or both cov and corr")
+        cov = returns.cov()
+        corr = returns.corr()
+    order = cluster_order(corr, method=method)
+    return recursive_bisection(cov, order).reindex(cov.index)

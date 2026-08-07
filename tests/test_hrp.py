@@ -7,6 +7,9 @@ import pytest
 from quant_system.portfolio.hrp import (
     cluster_order,
     correlation_distance,
+    hrp_weights,
+    inverse_variance_weights,
+    recursive_bisection,
 )
 
 
@@ -44,3 +47,39 @@ def test_cluster_order_keeps_correlated_pairs_adjacent():
     pos = {name: i for i, name in enumerate(order)}
     assert abs(pos["A"] - pos["B"]) == 1                         # the tight pair is adjacent
     assert abs(pos["C"] - pos["D"]) == 1
+
+
+def test_inverse_variance_favours_the_calm_asset():
+    cov = pd.DataFrame(np.diag([4.0, 1.0]), index=["hi", "lo"], columns=["hi", "lo"])
+    w = inverse_variance_weights(cov)
+    assert w.sum() == pytest.approx(1.0)
+    assert w["lo"] == pytest.approx(0.8)                         # 1/1 vs 1/4 -> 0.8 / 0.2
+    assert w["hi"] == pytest.approx(0.2)
+
+
+def test_bisection_two_uncorrelated_assets_matches_inverse_variance():
+    # For two uncorrelated assets HRP reduces to inverse-variance weighting.
+    cov = pd.DataFrame(np.diag([4.0, 1.0]), index=["hi", "lo"], columns=["hi", "lo"])
+    w = recursive_bisection(cov, ["hi", "lo"])
+    assert w["lo"] == pytest.approx(0.8)
+    assert w["hi"] == pytest.approx(0.2)
+
+
+def test_hrp_weights_are_long_only_and_normalised():
+    w = hrp_weights(cov=_block_corr(), corr=_block_corr())       # unit variances -> cov == corr
+    assert w.sum() == pytest.approx(1.0)
+    assert (w > 0).all()
+
+
+def test_hrp_splits_risk_evenly_across_equal_clusters():
+    # Two symmetric two-asset clusters with equal variances: HRP should give each
+    # cluster ~half, unlike a size-weighted scheme.
+    block = _block_corr()
+    w = hrp_weights(cov=block, corr=block)
+    assert w["A"] + w["B"] == pytest.approx(0.5, abs=0.05)
+    assert w["C"] + w["D"] == pytest.approx(0.5, abs=0.05)
+
+
+def test_hrp_requires_inputs():
+    with pytest.raises(ValueError, match="pass returns"):
+        hrp_weights()
