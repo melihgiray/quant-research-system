@@ -60,6 +60,39 @@ problem here; a sleeve that loses money out of sample is. Risk parity balances
 risk, it does not decide which sleeves deserve capital, and skill-weighting the
 sleeves is a separate piece of work.
 
+### Hierarchical risk parity vs inverse-variance
+
+A separate allocation question: given a diversified universe, how should you
+split capital across it. Inverse-variance weighting sizes each asset by 1/var
+and ignores correlation, so a cluster of near-duplicate names quietly soaks up
+risk budget. Hierarchical Risk Parity (Lopez de Prado, 2016) clusters the assets
+on their correlation, reorders so similar names are adjacent, and splits the
+risk budget down that tree, so a tight cluster is treated as one before its
+members compete. No covariance matrix is inverted, which is what makes
+mean-variance weights so fragile on noisy estimates.
+
+Rolling monthly rebalance on the full 44-name universe, trailing-year
+covariance, long-only, gross of trading costs (the question is allocation
+quality, not execution). Reproduce with `python scripts/build_hrp_results.py`.
+
+| Allocator | Sharpe | Ann. return | Ann. vol | Max drawdown | Effective N |
+|---|---|---|---|---|---|
+| HRP | 1.15 | +15.8% | 13.5% | -29.3% | 23.7 |
+| Inverse-variance | 0.97 | +14.3% | 15.0% | -32.5% | 32.6 |
+| Equal weight | 1.10 | +18.8% | 16.9% | -33.9% | 43.5 |
+
+![HRP vs inverse-variance](docs/results/hrp_vs_ivp.png)
+
+HRP does what the paper claims: the best risk-adjusted return of the three, the
+lowest realised volatility, and the shallowest drawdown. The counter-intuitive
+column is effective N (one over the Herfindahl index of the weights): HRP holds
+fewer effective names than inverse-variance, not more. It is more concentrated
+by name, yet realises less risk, because it diversifies in risk space rather
+than trying to own a little of everything. Equal weight earns the most raw
+return here by leaning into a strong-equity decade, but pays for it in the
+highest volatility and the deepest drawdown, which is the whole point of a
+risk-based allocator.
+
 ## What's in it
 
 Three strategies:
