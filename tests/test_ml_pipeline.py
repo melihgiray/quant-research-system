@@ -6,7 +6,7 @@ import pytest
 from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.pipeline import Pipeline
 
-from quant_system.signals.ml_signal import build_classifier
+from quant_system.signals.ml_signal import _fit_model, build_classifier
 
 
 def _toy(n=400, seed=0):
@@ -43,6 +43,20 @@ def test_pipeline_matches_bare_estimator():
 def test_invalid_calibration_method_rejected():
     with pytest.raises(ValueError, match="calibrate must be"):
         build_classifier(calibrate="bogus")
+
+
+def test_fit_model_routes_sample_weight_to_the_estimator():
+    # Non-uniform sample weights must change the fit; equal weights must not (a
+    # no-op reweight leaves the model identical to the unweighted fit).
+    X, y = _toy(seed=5)
+    n = len(y)
+    unweighted = _fit_model(build_classifier(seed=5), X, y)
+    equal = _fit_model(build_classifier(seed=5), X, y, sample_weight=np.ones(n))
+    skewed = np.where(y > 0, 3.0, 0.5)                    # emphasise the positive rows
+    reweighted = _fit_model(build_classifier(seed=5), X, y, sample_weight=skewed)
+    p_unweighted = unweighted.predict_proba(X)[:, 1]
+    assert np.allclose(p_unweighted, equal.predict_proba(X)[:, 1])
+    assert not np.allclose(p_unweighted, reweighted.predict_proba(X)[:, 1])
 
 
 def test_calibration_produces_valid_probabilities_matching_base_rate():

@@ -32,6 +32,7 @@ from sklearn.metrics import get_scorer
 from sklearn.pipeline import Pipeline
 
 from ..config import MLConfig, TRADING_DAYS_PER_YEAR
+from .sample_weights import uniqueness_weights
 
 
 FEATURE_NAMES: List[str] = [
@@ -169,7 +170,7 @@ def compute_features(price_data, cfg: MLConfig = None) -> Dict[str, pd.DataFrame
     return out
 
 
-def _pooled_training_set(features, rets, fit_end, train_window):
+def _pooled_training_set(features, rets, fit_end, train_window, return_dates=False):
     """Stack assets into (X, y) using rows whose label is known by `fit_end`.
 
     A row dated d is labelled with the sign of the return on the NEXT trading
@@ -177,9 +178,12 @@ def _pooled_training_set(features, rets, fit_end, train_window):
     return on the first out-of-sample day, which the model must not see. Hence
     the strict `< fit_end` cut below. Rows whose next-day return is missing get
     a NaN label (not a fake "down") and fall out with dropna.
+
+    With ``return_dates`` the per-row label dates are returned too, so callers can
+    weight rows by how many share a date (label uniqueness).
     """
     start = fit_end - pd.tseries.offsets.BDay(train_window)
-    X_parts, y_parts = [], []
+    X_parts, y_parts, date_parts = [], [], []
     for t, feats in features.items():
         next_ret = rets[t].shift(-1)
         df = feats.copy()
@@ -189,9 +193,27 @@ def _pooled_training_set(features, rets, fit_end, train_window):
         if not df.empty:
             X_parts.append(df[FEATURE_NAMES].values)
             y_parts.append(df["_y"].values)
+            date_parts.append(df.index.to_numpy())
     if not X_parts:
-        return None, None
-    return np.vstack(X_parts), np.concatenate(y_parts)
+        return (None, None, None) if return_dates else (None, None)
+    X = np.vstack(X_parts)
+    y = np.concatenate(y_parts)
+    if return_dates:
+        return X, y, pd.DatetimeIndex(np.concatenate(date_parts))
+    return X, y
+
+
+def _fit_model(model, X, y, sample_weight=None):
+    """Fit the factory's model, routing sample weights to the classifier step.
+
+    A bare pipeline takes the weight as ``clf__sample_weight``; the calibrated
+    wrapper takes a plain ``sample_weight`` and forwards it internally.
+    """
+    if sample_weight is None:
+        return model.fit(X, y)
+    if isinstance(model, Pipeline):
+        return model.fit(X, y, clf__sample_weight=sample_weight)
+    return model.fit(X, y, sample_weight=sample_weight)
 
 
 def _proba_panel(model, features) -> pd.DataFrame:
@@ -240,12 +262,14 @@ def train_predict(price_data, fit_end, cfg: MLConfig = None,
     features = compute_features(price_data, cfg)
     rets = price_data.returns()
 
-    X, y = _pooled_training_set(features, rets, fit_end, cfg.train_window)
+    X, y, dates = _pooled_training_set(features, rets, fit_end, cfg.train_window,
+                                       return_dates=True)
     if X is None or len(np.unique(y)) < 2:
         return pd.DataFrame(0.0, index=price_data.close.index, columns=price_data.close.columns)
 
-    model = build_classifier(seed)
-    model.fit(X, y)
+    model = build_classifier(seed, calibrate=cfg.calibrate)
+    sample_weight = uniqueness_weights(dates) if cfg.uniqueness_weighting else None
+    _fit_model(model, X, y, sample_weight)
     proba = _proba_panel(model, features)
     return _weights_from_proba(proba, cfg.prob_deadband, max_weight)
 

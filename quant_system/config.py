@@ -184,6 +184,11 @@ class MLConfig:
     rsi_span:       RSI window.
     prob_deadband:  predicted P(up) within +/- this of 0.5 => no position
                     (avoid trading on coin-flip predictions).
+    calibrate:      "isotonic", "sigmoid", or None. Off by default so the
+                    documented backtest stays comparable; when set, P(up) is
+                    calibrated before it is turned into a bet size.
+    uniqueness_weighting: down-weight training rows on crowded label dates
+                    (Lopez de Prado sample uniqueness). Off by default.
     """
 
     train_window: int = 2 * TRADING_DAYS_PER_YEAR
@@ -191,6 +196,8 @@ class MLConfig:
     vol_span: int = TRADING_DAYS_PER_MONTH
     rsi_span: int = 14
     prob_deadband: float = 0.05
+    calibrate: Optional[str] = None
+    uniqueness_weighting: bool = False
 
 
 @dataclass(frozen=True)
