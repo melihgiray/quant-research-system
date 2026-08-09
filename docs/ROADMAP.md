@@ -91,7 +91,7 @@ they merge. The list is a guide, not a quota.
   2. Rolling Sharpe/beta plot and a per-year return table.
   3. A script that writes the report.
   4. Docs and changelog.
-- [ ] CI running the test suite, and a short design write-up.
+- [x] CI running the test suite, and a short design write-up.
   1. A GitHub Actions workflow that runs `pytest` on push.
   2. A status badge in the README.
   3. `docs/DESIGN.md` covering the main choices.
