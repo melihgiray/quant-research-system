@@ -1,5 +1,7 @@
 # quant-research-system
 
+[![CI](https://github.com/melihgiray/quant-research-system/actions/workflows/ci.yml/badge.svg)](https://github.com/melihgiray/quant-research-system/actions/workflows/ci.yml)
+
 A backtesting setup for systematic equity and single-stock options strategies on
 daily data. It runs each strategy through an engine that charges realistic
 trading costs, tests them out of sample, and prints the results. Nothing here
