@@ -43,3 +43,15 @@ def test_pipeline_matches_bare_estimator():
 def test_invalid_calibration_method_rejected():
     with pytest.raises(ValueError, match="calibrate must be"):
         build_classifier(calibrate="bogus")
+
+
+def test_calibration_produces_valid_probabilities_matching_base_rate():
+    # A calibrated classifier's mean predicted probability on held-out data should
+    # track the observed positive rate (calibration in the large).
+    X, y = _toy(n=1500, seed=2)
+    cut = 1000
+    model = build_classifier(seed=3, calibrate="isotonic", cv=3)
+    model.fit(X[:cut], y[:cut])
+    p = model.predict_proba(X[cut:])[:, 1]
+    assert p.min() >= 0.0 and p.max() <= 1.0
+    assert abs(p.mean() - y[cut:].mean()) < 0.05          # predicted rate ~ actual rate
