@@ -26,8 +26,10 @@ from typing import Dict, List, Optional
 import numpy as np
 import pandas as pd
 
+from sklearn.calibration import CalibratedClassifierCV
 from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.metrics import get_scorer
+from sklearn.pipeline import Pipeline
 
 from ..config import MLConfig, TRADING_DAYS_PER_YEAR
 
@@ -36,6 +38,31 @@ FEATURE_NAMES: List[str] = [
     "mom_5", "mom_10", "mom_21", "zscore_21", "vol_21",
     "volume_ratio", "rsi_14", "dist_52w_high",
 ]
+
+
+def build_classifier(seed: int = 7, calibrate: Optional[str] = None, cv: int = 3):
+    """The directional model as an sklearn Pipeline, optionally probability-calibrated.
+
+    One source of truth for the gradient-boosting configuration, which used to be
+    duplicated at every fit site. Gradient-boosted trees need no scaling or
+    imputation (they split on raw values and handle NaN natively), so the pipeline
+    is deliberately a single estimator step. It is the seam that calibration and
+    sample-weight routing plug into: fit it with ``clf__sample_weight=...``.
+
+    When ``calibrate`` is "isotonic" or "sigmoid" the pipeline is wrapped in a
+    ``CalibratedClassifierCV``. That matters here because positions are sized by
+    ``P(up) - 0.5``, so a miscalibrated probability is a mis-sized bet, not just a
+    wrong label.
+    """
+    pipe = Pipeline([("clf", HistGradientBoostingClassifier(
+        max_depth=3, learning_rate=0.05, max_iter=300,
+        l2_regularization=1.0, random_state=seed,
+    ))])
+    if calibrate is None:
+        return pipe
+    if calibrate not in ("isotonic", "sigmoid"):
+        raise ValueError("calibrate must be 'isotonic', 'sigmoid', or None")
+    return CalibratedClassifierCV(pipe, method=calibrate, cv=cv)
 
 
 def permutation_importance_pvalues(
@@ -217,10 +244,7 @@ def train_predict(price_data, fit_end, cfg: MLConfig = None,
     if X is None or len(np.unique(y)) < 2:
         return pd.DataFrame(0.0, index=price_data.close.index, columns=price_data.close.columns)
 
-    model = HistGradientBoostingClassifier(
-        max_depth=3, learning_rate=0.05, max_iter=300,
-        l2_regularization=1.0, random_state=seed,
-    )
+    model = build_classifier(seed)
     model.fit(X, y)
     proba = _proba_panel(model, features)
     return _weights_from_proba(proba, cfg.prob_deadband, max_weight)
@@ -259,10 +283,7 @@ def shap_feature_importance(price_data, cfg: MLConfig = None, fit_end=None,
     if X is None or len(np.unique(y)) < 2:
         return None
 
-    model = HistGradientBoostingClassifier(
-        max_depth=3, learning_rate=0.05, max_iter=300,
-        l2_regularization=1.0, random_state=seed,
-    )
+    model = build_classifier(seed)
     model.fit(X, y)
 
     # Subsample rows for a fast, stable SHAP estimate.
@@ -331,10 +352,7 @@ def ml_feature_significance(price_data, cfg: MLConfig = None, fit_end=None,
             or len(np.unique(y[test_idx])) < 2:
         return None
 
-    model = HistGradientBoostingClassifier(
-        max_depth=3, learning_rate=0.05, max_iter=300,
-        l2_regularization=1.0, random_state=seed,
-    )
+    model = build_classifier(seed)
     model.fit(X[train_idx], y[train_idx])
     pvalues = permutation_importance_pvalues(
         model, X[test_idx], y[test_idx], feature_names=FEATURE_NAMES,
