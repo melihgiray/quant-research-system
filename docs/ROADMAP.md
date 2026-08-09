@@ -59,7 +59,7 @@ they merge. The list is a guide, not a quota.
 
 ## Machine learning
 - [x] Purged and embargoed cross-validation to stop label leakage.
-- [ ] A proper sklearn pipeline with calibration and sample weights by uniqueness.
+- [x] A proper sklearn pipeline with calibration and sample weights by uniqueness.
   1. Wrap the model in an sklearn `Pipeline` + test.
   2. Probability calibration + test.
   3. Sample-uniqueness (label concurrency) weights + test.
