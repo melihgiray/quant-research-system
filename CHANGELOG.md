@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.13.0 - ML model as a pipeline, with calibration and sample uniqueness
+
+- `signals/ml_signal.py` gains `build_classifier`, one factory that returns the
+  gradient-boosting model as an sklearn `Pipeline`, replacing the same estimator
+  config that was duplicated at three fit sites. A regression test pins that the
+  single-step pipeline predicts identically to the bare estimator, so the
+  documented backtest numbers do not move under the refactor.
+- Probability calibration: `build_classifier(calibrate="isotonic"|"sigmoid")`
+  wraps the pipeline in a `CalibratedClassifierCV`. This matters because
+  positions are sized by `P(up) - 0.5`, so a miscalibrated probability is a
+  mis-sized bet, not just a wrong label.
+- `signals/sample_weights.py`: label-uniqueness weights (Lopez de Prado). The
+  pooled training set stacks every asset every day, so a market-wide move is
+  counted many times; weighting each row by one over its label concurrency
+  down-weights crowded days. For these single-bar (next-day) labels this is the
+  exact single-bar case of average uniqueness, stated as such rather than dressed
+  up as the overlapping triple-barrier version.
+- `train_predict` now builds through the factory and routes both calibration and
+  sample weights via `MLConfig.calibrate` and `MLConfig.uniqueness_weighting`.
+  Both default off, so the traded signal and its published numbers are unchanged;
+  measuring their effect on the ML sleeve's out-of-sample Sharpe is left as its
+  own piece of work rather than folded in silently.
+- 13 new tests (205 total).
+
 ## 0.12.0 - hierarchical risk parity, measured against inverse-variance
 
 - `portfolio/hrp.py`: Hierarchical Risk Parity (Lopez de Prado, 2016).
