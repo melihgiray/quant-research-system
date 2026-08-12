@@ -24,6 +24,7 @@ dependencies = [
 [project.optional-dependencies]
 regime = ["hmmlearn>=0.3"]
 ml = ["shap>=0.43"]
+garch = ["arch>=6"]
 monitor = ["anthropic>=0.100", "twilio>=8"]
 fred = ["pandas-datareader>=0.10"]
 dev = ["pytest>=7"]
