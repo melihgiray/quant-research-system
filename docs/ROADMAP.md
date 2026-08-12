@@ -73,7 +73,7 @@ they merge. The list is a guide, not a quota.
   5. Docs and changelog.
 
 ## Volatility and risk
-- [ ] GARCH(1,1) conditional-vol forecasts for sizing (the `arch` package is installed).
+- [x] GARCH(1,1) conditional-vol forecasts for sizing (the `arch` package is installed).
   1. A GARCH wrapper returning a one-step conditional-vol forecast + test.
   2. A causal (lagged) forecast series over a price path + test.
   3. Feed it into sizing and expose it as a third regime definition + test.
