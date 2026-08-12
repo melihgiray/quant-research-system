@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.14.0 - one-file HTML tearsheet
+
+- `performance/rolling.py`: `rolling_sharpe` and `rolling_beta` series, plus a
+  `per_year_table` (each year's actual compound return, annualised vol and
+  Sharpe, and worst drawdown). The per-year return is the real figure, not an
+  annualised one, so a partial first or last year is reported as what it was.
+- `performance/html_report.py`: `build_html_report` renders a single
+  self-contained HTML tearsheet, headline metrics, the per-year table, an
+  equity-and-drawdown chart and rolling Sharpe/beta. Every figure is an embedded
+  base64 PNG, so the report is one file with no external assets and opens the
+  same offline.
+- `scripts/build_report.py` writes the tearsheet for the blended book against the
+  market ETF as the beta benchmark, and refuses to build from synthetic data.
+  The output is committed at `docs/results/report.html` and linked from the README.
+- 10 new tests (215 total).
+
 ## 0.13.0 - ML model as a pipeline, with calibration and sample uniqueness
 
 - `signals/ml_signal.py` gains `build_classifier`, one factory that returns the
