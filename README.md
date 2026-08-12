@@ -62,6 +62,12 @@ problem here; a sleeve that loses money out of sample is. Risk parity balances
 risk, it does not decide which sleeves deserve capital, and skill-weighting the
 sleeves is a separate piece of work.
 
+A full one-file tearsheet for this book, with the headline metrics, a per-year
+table, an equity-and-drawdown chart, and rolling Sharpe and rolling beta, is at
+[docs/results/report.html](docs/results/report.html). It is self-contained (every
+chart is an embedded image, no external assets) and rebuilt with
+`python scripts/build_report.py`.
+
 ### Hierarchical risk parity vs inverse-variance
 
 A separate allocation question: given a diversified universe, how should you
