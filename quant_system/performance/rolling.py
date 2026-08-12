@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 
 from ..config import TRADING_DAYS_PER_YEAR
+from .analytics import annualized_vol, max_drawdown, sharpe_ratio
 
 
 def rolling_sharpe(returns: pd.Series,
@@ -42,3 +43,28 @@ def rolling_beta(returns: pd.Series,
     cov = joined["r"].rolling(window).cov(joined["b"])
     var = joined["b"].rolling(window).var()
     return (cov / var).reindex(returns.index)
+
+
+def per_year_table(returns: pd.Series,
+                   periods: int = TRADING_DAYS_PER_YEAR,
+                   rf_annual: float = 0.0) -> pd.DataFrame:
+    """Per-calendar-year return, volatility, Sharpe and worst drawdown.
+
+    ``return`` is the year's actual compound return, not an annualised figure, so
+    a partial first or last year is reported as what it was rather than
+    extrapolated. Volatility and Sharpe are annualised in the usual way.
+    """
+    rows = []
+    for year, r in returns.groupby(returns.index.year):
+        r = r.dropna()
+        if r.empty:
+            continue
+        rows.append({
+            "year": int(year),
+            "return": float((1.0 + r).prod() - 1.0),
+            "vol": annualized_vol(r, periods),
+            "sharpe": sharpe_ratio(r, rf_annual, periods),
+            "max_drawdown": max_drawdown(r),
+            "days": int(len(r)),
+        })
+    return pd.DataFrame(rows).set_index("year")

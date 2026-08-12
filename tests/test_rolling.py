@@ -4,7 +4,11 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from quant_system.performance.rolling import rolling_beta, rolling_sharpe
+from quant_system.performance.rolling import (
+    per_year_table,
+    rolling_beta,
+    rolling_sharpe,
+)
 
 
 def _series(n=400, seed=0):
@@ -46,3 +50,23 @@ def test_rolling_beta_reindexes_to_strategy_dates():
     strat = _series(seed=5)
     beta = rolling_beta(strat, bench, window=80)
     assert list(beta.index) == list(strat.index)
+
+
+def test_per_year_table_has_one_row_per_year_with_actual_return():
+    idx = pd.bdate_range("2020-01-01", "2021-12-31")
+    rng = np.random.default_rng(6)
+    r = pd.Series(rng.normal(0.0004, 0.008, len(idx)), index=idx)
+    table = per_year_table(r)
+    assert list(table.index) == [2020, 2021]
+    assert list(table.columns) == ["return", "vol", "sharpe", "max_drawdown", "days"]
+    # The reported return is the year's actual compound return, not annualised.
+    r2020 = r[r.index.year == 2020]
+    assert table.loc[2020, "return"] == pytest.approx((1.0 + r2020).prod() - 1.0)
+    assert table.loc[2020, "max_drawdown"] <= 0.0
+
+
+def test_per_year_table_skips_empty_years():
+    idx = pd.bdate_range("2020-01-01", periods=60)
+    r = pd.Series(np.full(60, 0.001), index=idx)
+    table = per_year_table(r)
+    assert list(table.index) == [2020]
