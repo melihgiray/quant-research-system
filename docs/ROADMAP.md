@@ -86,7 +86,7 @@ they merge. The list is a guide, not a quota.
   5. Docs and changelog.
 
 ## Reporting and tooling
-- [ ] A single HTML report with rolling Sharpe/beta and a per-year table.
+- [x] A single HTML report with rolling Sharpe/beta and a per-year table.
   1. A self-contained HTML tearsheet builder + test.
   2. Rolling Sharpe/beta plot and a per-year return table.
   3. A script that writes the report.
