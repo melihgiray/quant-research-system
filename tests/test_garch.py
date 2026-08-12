@@ -6,7 +6,7 @@ import pytest
 
 arch = pytest.importorskip("arch")   # skip cleanly where the garch extra is absent
 
-from quant_system.risk.garch import garch_forecast_vol
+from quant_system.risk.garch import garch_forecast_vol, garch_vol_series
 
 
 def _garch_like(n=1200, omega=1e-6, alpha=0.08, beta=0.90, seed=0):
@@ -42,3 +42,22 @@ def test_forecast_in_a_sane_range_of_sample_vol():
 def test_too_few_observations_raises():
     with pytest.raises(ValueError, match="at least"):
         garch_forecast_vol(_garch_like(n=50))
+
+
+def test_vol_series_warmup_is_nan_then_defined():
+    r = _garch_like(n=500, seed=3)
+    s = garch_vol_series(r, refit_every=21, min_obs=200)
+    assert s.iloc[:200].isna().all()
+    assert s.iloc[200:].notna().all()
+    assert (s.dropna() > 0).all()
+    assert len(s) == len(r)
+
+
+def test_vol_series_is_causal():
+    r = _garch_like(n=500, seed=4)
+    base = garch_vol_series(r, refit_every=21, min_obs=200)
+    tampered = r.copy()
+    tampered.iloc[350:] *= 5.0                          # blow up the tail
+    after = garch_vol_series(tampered, refit_every=21, min_obs=200)
+    # Forecasts up to the tamper point use only pre-tamper data, so they match.
+    pd.testing.assert_series_equal(base.iloc[:350], after.iloc[:350])
