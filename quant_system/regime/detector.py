@@ -69,6 +69,37 @@ def vol_ratio_regime(price_data, cfg: RegimeConfig = None,
     return labels.shift(1).rename("regime_vol_ratio")
 
 
+def garch_regime_labels(returns: pd.Series,
+                        high_vol_ratio: float = 1.30,
+                        baseline_window: int = TRADING_DAYS_PER_YEAR,
+                        refit_every: int = 21,
+                        min_obs: int = TRADING_DAYS_PER_YEAR) -> pd.Series:
+    """Causal high/low-vol regime from a GARCH forecast running hot vs its baseline.
+
+    regime = 1 (defensive) when the one-step GARCH volatility forecast exceeds
+    ``high_vol_ratio`` times its own trailing-median forecast, else 0. The GARCH
+    series is already a forecast made from data before day t, so the label is
+    causal without the extra one-day shift the realised-vol version needs. The
+    ``arch`` extra is required.
+    """
+    from ..risk.garch import garch_vol_series          # lazy: pulls in the arch extra
+
+    gvol = garch_vol_series(returns, refit_every=refit_every, min_obs=min_obs)
+    baseline = gvol.rolling(baseline_window, min_periods=baseline_window // 4).median()
+    ratio = gvol / baseline
+    labels = (ratio > high_vol_ratio).astype(float)
+    labels[ratio.isna()] = np.nan
+    return labels.rename("regime_garch")
+
+
+def garch_regime(price_data, cfg: RegimeConfig = None,
+                 benchmark: Optional[str] = None) -> pd.Series:
+    """GARCH-forecast regime on the market proxy: a third, causal regime definition."""
+    cfg = cfg or RegimeConfig()
+    mkt = market_proxy_returns(price_data, benchmark)
+    return garch_regime_labels(mkt, high_vol_ratio=cfg.high_vol_ratio)
+
+
 def hmm_regime(price_data, cfg: RegimeConfig = None, seed: int = 7,
                benchmark: Optional[str] = None):
     """Fit a 2-state Gaussian HMM on daily returns; label the high-variance state 1.
