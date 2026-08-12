@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.15.0 - GARCH(1,1) conditional-volatility forecasts
+
+- `risk/garch.py`: `garch_forecast_vol` fits a GARCH(1,1) and returns the
+  one-step-ahead conditional volatility. Unlike trailing realised vol, it reacts
+  to a shock immediately and then decays, which is the volatility clustering
+  realised vol lags. `arch` is a new optional `garch` extra, imported lazily so
+  the rest of the package runs without it.
+- `garch_vol_series` produces a causal forecast for every day of a return path,
+  refitting on expanding history every 21 days and carrying the last forecast
+  between refits (a documented cost/granularity trade-off). Every value is fit on
+  data strictly before its day, proven by a causality test.
+- `garch_vol_target` sizes a return stream toward a volatility target using the
+  forecast. Because the forecast already looks one step ahead, no extra one-day
+  lag is applied, unlike the realised-vol targeting in `portfolio` and `risk.sizing`.
+- `regime/detector.py` gains `garch_regime`, a third causal regime definition
+  alongside the vol-ratio and HMM detectors: defensive when the GARCH forecast
+  runs hot versus its own trailing-median baseline.
+- CI now installs the `garch` extra, and the GARCH tests `importorskip("arch")`
+  so the suite still passes where the extra is absent.
+- 11 new tests (226 total).
+
 ## 0.14.0 - one-file HTML tearsheet
 
 - `performance/rolling.py`: `rolling_sharpe` and `rolling_beta` series, plus a
