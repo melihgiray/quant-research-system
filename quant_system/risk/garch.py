@@ -16,6 +16,8 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
+from ..config import TRADING_DAYS_PER_YEAR
+
 
 def garch_forecast_vol(returns,
                        p: int = 1,
@@ -72,3 +74,25 @@ def garch_vol_series(returns,
                 pass                                   # keep the previous forecast on a fit failure
         out.iloc[pos] = last
     return out.reindex(pd.Series(returns).index)
+
+
+def garch_vol_target(returns,
+                     target_vol: float = 0.10,
+                     max_leverage: float = 3.0,
+                     refit_every: int = 21,
+                     min_obs: int = 252,
+                     scale: float = 100.0) -> pd.Series:
+    """Scale a return stream toward ``target_vol`` using the GARCH forecast.
+
+    The GARCH analogue of ``portfolio.volatility_target``. Because the GARCH
+    series is a one-step-ahead *forecast* of day t's volatility, the scaler for
+    day t is already known before day t's return is earned, so no extra one-day
+    lag is applied here (the realised-vol version needs one because it looks
+    backward). The multiplier is capped at ``max_leverage``.
+    """
+    r = pd.Series(returns)
+    gvol = garch_vol_series(r, refit_every=refit_every, min_obs=min_obs, scale=scale)
+    annualised = gvol * np.sqrt(TRADING_DAYS_PER_YEAR)
+    scaler = (target_vol / annualised).replace([np.inf, -np.inf], np.nan)
+    scaler = scaler.clip(upper=max_leverage)
+    return r.mul(scaler)

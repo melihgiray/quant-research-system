@@ -6,7 +6,11 @@ import pytest
 
 arch = pytest.importorskip("arch")   # skip cleanly where the garch extra is absent
 
-from quant_system.risk.garch import garch_forecast_vol, garch_vol_series
+from quant_system.risk.garch import (
+    garch_forecast_vol,
+    garch_vol_series,
+    garch_vol_target,
+)
 
 
 def _garch_like(n=1200, omega=1e-6, alpha=0.08, beta=0.90, seed=0):
@@ -61,3 +65,19 @@ def test_vol_series_is_causal():
     after = garch_vol_series(tampered, refit_every=21, min_obs=200)
     # Forecasts up to the tamper point use only pre-tamper data, so they match.
     pd.testing.assert_series_equal(base.iloc[:350], after.iloc[:350])
+
+
+def test_vol_target_moves_realised_vol_toward_target():
+    r = _garch_like(n=900, omega=1e-5, seed=6)         # a wild stream to scale down
+    targeted = garch_vol_target(r, target_vol=0.10, min_obs=200, max_leverage=10.0).dropna()
+    raw_vol = r.reindex(targeted.index).std() * np.sqrt(252)
+    tgt_vol = targeted.std() * np.sqrt(252)
+    assert tgt_vol < raw_vol                            # the book was de-risked
+    assert 0.05 < tgt_vol < 0.20                        # and lands near the 10% aim
+
+
+def test_vol_target_respects_leverage_cap():
+    r = _garch_like(n=700, seed=7)
+    targeted = garch_vol_target(r, target_vol=0.10, min_obs=200, max_leverage=2.0)
+    ratio = (targeted / r).dropna()
+    assert ratio.max() <= 2.0 + 1e-9
