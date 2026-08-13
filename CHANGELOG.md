@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.16.0 - fat-tail risk: Cornish-Fisher, EVT, and stress scenarios
+
+- `risk/metrics.py` gains `cornish_fisher_var`: the Gaussian VaR quantile
+  corrected for sample skewness and excess kurtosis, so a left-skewed, fat-tailed
+  book reports a larger loss than the normal assumption would.
+- `evt_tail` fits a Generalized Pareto distribution to losses over a high
+  threshold (peaks-over-threshold) and reads deep-quantile VaR and expected
+  shortfall off that fit, plus the tail index `xi`. This extrapolates into the
+  tail rather than being capped by the worst observed loss, which is where
+  historical VaR is noisiest.
+- `risk/stress.py`: `stress_test` estimates strategy P&L under market shocks. The
+  default shocks are the benchmark's own worst day, week and month in the sample
+  (computed, never hard-coded), passed through the strategy's beta; custom named
+  scenarios can be supplied. The beta approximation is documented as a floor on
+  the pain, since correlations rise in a crash.
+- The text tearsheet now prints the Cornish-Fisher VaR and the EVT 99% VaR /
+  expected shortfall / tail index alongside the historical and Gaussian figures,
+  so the gap between them shows the fat tail directly.
+- 11 new tests (237 total).
+
 ## 0.15.0 - GARCH(1,1) conditional-volatility forecasts
 
 - `risk/garch.py`: `garch_forecast_vol` fits a GARCH(1,1) and returns the
