@@ -56,3 +56,13 @@ def test_evt_is_deterministic_for_fixed_data():
     r = _left_skewed_fat(seed=4)
     a, b = evt_tail(r), evt_tail(r)
     assert (a.var, a.es, a.xi) == (b.var, b.es, b.xi)
+
+
+def test_tearsheet_surfaces_cornish_fisher_and_evt():
+    from quant_system.performance.tearsheet import format_tearsheet
+    idx = pd.bdate_range("2019-01-01", periods=1200)
+    r = _left_skewed_fat(n=1200, seed=5)
+    r.index = idx
+    text = format_tearsheet(r, title="TAILS")
+    assert "Cornish-Fisher" in text
+    assert "EVT/GPD" in text

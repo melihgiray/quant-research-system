@@ -22,6 +22,7 @@ from .analytics import compute_metrics
 from .significance import significance_summary
 from ..risk.metrics import (
     drawdown_series, historical_var, conditional_var, parametric_var,
+    cornish_fisher_var, evt_tail,
 )
 
 
@@ -92,6 +93,11 @@ def format_tearsheet(
         f"(Gaussian {_fmt_pct(parametric_var(r, 0.95))})",
         f" 95% CVaR (daily)     {_fmt_pct(conditional_var(r, 0.95))}",
     ]
+    if not r.empty:
+        et = evt_tail(r, 0.99)
+        rows.append(f" 95% VaR (Cornish-Fisher) {_fmt_pct(cornish_fisher_var(r, 0.95))}")
+        rows.append(f" 99% VaR (EVT/GPD)    {_fmt_pct(et.var)}  "
+                    f"(ES {_fmt_pct(et.es)}, tail xi {_fmt_num(et.xi)})")
     if n_trials is not None and not r.empty:
         rows.append("-" * width)
         rows.extend(f" {ln}" for ln in significance_summary(
