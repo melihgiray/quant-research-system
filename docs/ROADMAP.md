@@ -78,7 +78,7 @@ they merge. The list is a guide, not a quota.
   2. A causal (lagged) forecast series over a price path + test.
   3. Feed it into sizing and expose it as a third regime definition + test.
   4. Docs and changelog.
-- [ ] Cornish-Fisher and EVT tail estimates, plus a couple of stress scenarios.
+- [x] Cornish-Fisher and EVT tail estimates, plus a couple of stress scenarios.
   1. Cornish-Fisher VaR + test.
   2. EVT peaks-over-threshold tail + test.
   3. Named stress scenarios (2008, 2020 shocks) + test.
