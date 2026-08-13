@@ -8,6 +8,8 @@ shortfall) is the average loss *conditional on* breaching VaR - it is coherent
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 import numpy as np
 import pandas as pd
 from scipy import stats
@@ -75,6 +77,57 @@ def cornish_fisher_var(returns: pd.Series, level: float = 0.95) -> float:
             + (z ** 3 - 3 * z) / 24 * k
             - (2 * z ** 3 - 5 * z) / 36 * s ** 2)
     return float(-(mu + z_cf * sigma))
+
+
+@dataclass
+class EVTTail:
+    """Extreme-value tail estimate from a peaks-over-threshold GPD fit.
+
+    ``var`` and ``es`` are positive loss fractions at the requested level; ``xi``
+    is the fitted GPD shape (tail index): xi > 0 is a genuinely heavy tail, xi ~ 0
+    is exponential, xi < 0 is bounded. ``threshold`` is the loss cut-off and
+    ``n_exceedances`` how many observations sat beyond it.
+    """
+    var: float
+    es: float
+    xi: float
+    threshold: float
+    n_exceedances: int
+
+
+def evt_tail(returns: pd.Series,
+             level: float = 0.99,
+             threshold_quantile: float = 0.90) -> EVTTail:
+    """Tail VaR and expected shortfall from extreme-value theory.
+
+    Historical VaR at a deep quantile is estimated from only a handful of points
+    and is noisy. Extreme-value theory instead fits a Generalized Pareto
+    distribution to the exceedances over a high threshold (the peaks-over-
+    threshold method), which is the limiting shape of tail exceedances, and reads
+    the deep quantile off that fit. This extrapolates into the tail in a
+    principled way rather than being capped by the worst observed loss.
+    """
+    if level <= threshold_quantile:
+        raise ValueError("level must exceed threshold_quantile")
+    r = returns.dropna()
+    losses = -r.values
+    if losses.size == 0:
+        return EVTTail(float("nan"), float("nan"), float("nan"), float("nan"), 0)
+
+    u = float(np.quantile(losses, threshold_quantile))
+    exceed = losses[losses > u] - u
+    n, nu = losses.size, exceed.size
+    if nu < 10:
+        return EVTTail(float("nan"), float("nan"), float("nan"), u, int(nu))
+
+    xi, _, beta = stats.genpareto.fit(exceed, floc=0.0)
+    ratio = (n / nu) * (1.0 - level)
+    if abs(xi) < 1e-8:
+        var = u + beta * (-np.log(ratio))
+    else:
+        var = u + (beta / xi) * (ratio ** (-xi) - 1.0)
+    es = var / (1.0 - xi) + (beta - xi * u) / (1.0 - xi) if xi < 1 else float("inf")
+    return EVTTail(float(var), float(es), float(xi), u, int(nu))
 
 
 def drawdown_series(returns: pd.Series) -> pd.Series:

@@ -4,7 +4,11 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from quant_system.risk.metrics import cornish_fisher_var, parametric_var
+from quant_system.risk.metrics import (
+    cornish_fisher_var,
+    evt_tail,
+    parametric_var,
+)
 
 
 def _normal(n=5000, seed=0):
@@ -32,3 +36,23 @@ def test_cornish_fisher_exceeds_gaussian_on_fat_left_tail():
 
 def test_cornish_fisher_is_a_positive_loss():
     assert cornish_fisher_var(_left_skewed_fat(), 0.95) > 0
+
+
+def test_evt_detects_a_heavy_tail_and_orders_es_above_var():
+    r = pd.Series(np.random.default_rng(1).standard_t(3, 8000) * 0.01)   # heavy tails
+    tail = evt_tail(r, level=0.99, threshold_quantile=0.90)
+    assert tail.xi > 0                                   # genuinely heavy tail detected
+    assert tail.var > 0 and np.isfinite(tail.var)
+    assert tail.es >= tail.var                           # shortfall is at least the VaR
+    assert tail.n_exceedances > 100
+
+
+def test_evt_requires_level_beyond_threshold():
+    with pytest.raises(ValueError, match="must exceed"):
+        evt_tail(_normal(), level=0.90, threshold_quantile=0.95)
+
+
+def test_evt_is_deterministic_for_fixed_data():
+    r = _left_skewed_fat(seed=4)
+    a, b = evt_tail(r), evt_tail(r)
+    assert (a.var, a.es, a.xi) == (b.var, b.es, b.xi)
