@@ -35,15 +35,24 @@ class PriceData:
         Share volume, same index/columns as ``close``.
     synthetic : bool
         True if this panel came from the offline generator rather than yfinance.
+    open : pd.DataFrame, optional
+        Adjusted open prices, same index/columns as ``close`` when present. Used
+        only by the next-open fill mode; None when the source did not carry it.
     """
 
     close: pd.DataFrame
     volume: pd.DataFrame
     synthetic: bool = False
+    open: Optional[pd.DataFrame] = None
 
     @property
     def tickers(self) -> List[str]:
         return list(self.close.columns)
+
+    @property
+    def has_open(self) -> bool:
+        """True when open prices are available for the next-open fill mode."""
+        return self.open is not None
 
     def returns(self, kind: str = "simple") -> pd.DataFrame:
         """Daily returns.
@@ -63,7 +72,9 @@ class PriceData:
     def subset(self, tickers: Sequence[str]) -> "PriceData":
         """Return a new PriceData restricted to ``tickers`` (order preserved)."""
         cols = [t for t in tickers if t in self.close.columns]
-        return PriceData(self.close[cols].copy(), self.volume[cols].copy(), self.synthetic)
+        open_sub = self.open[cols].copy() if self.open is not None else None
+        return PriceData(self.close[cols].copy(), self.volume[cols].copy(),
+                         self.synthetic, open_sub)
 
 
 # --------------------------------------------------------------------------- #
