@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.20.0 - realized-vol vs GARCH regime sizing comparison
+
+- `scripts/build_regime_results.py` wires the GARCH regime (added in 0.15) into a
+  real backtest for the first time, comparing three defensive-sizing overlays on
+  the sector-momentum sleeve: none, the realized-vol-ratio regime, and the GARCH
+  regime. The finding is that the forecast-based detector does not win: it reaches
+  the lowest average volatility but turns risk down at the wrong moments, so it
+  prints a worse Sharpe (-0.25) and a deeper drawdown (-30.3%) than the slow
+  realized-vol detector (0.00 Sharpe, -20.8% drawdown) or doing nothing. The base
+  sleeve is near-zero Sharpe, so this is a narrow test on a weak signal, stated as
+  such in the README, but the direction is a useful check on the assumption that a
+  more sophisticated volatility model sizes better.
+- No library code changed; this is an analysis built on the existing, tested
+  regime and backtest code (test count unchanged at 270).
+
 ## 0.19.0 - SVI arbitrage-free surface fit
 
 - `options/svi.py`: the raw-SVI smile parameterisation, implemented from the
