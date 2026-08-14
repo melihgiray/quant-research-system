@@ -101,12 +101,16 @@ Done: Black-Scholes and CRR pricing with cross-checked Greeks; a live vol surfac
 with graded no-arbitrage checks; covered-call / cash-secured-put / delta-hedged
 short-straddle backtests; a real historical-chain loader validated against vendor
 IVs. Next:
-- [ ] Re-engineer a licensed research codebase (an SVI surface fit is the natural fit).
-  1. Record the source, author, commit SHA and license verbatim.
-  2. Port the algorithm into a typed module skeleton.
-  3. Fill in the rewrite with config instead of constants + tests.
-  4. A profiled before/after, reproducible by a script.
-  5. Attribution docs and changelog.
+- [x] SVI arbitrage-free surface fit (from the published Gatheral parameterization).
+  1. Raw-SVI total-variance formula + test.
+  2. Least-squares slice calibration with feasibility bounds + test.
+  3. Gatheral butterfly no-arbitrage check (g(k)) + test.
+  4. Per-expiry fit across a whole surface + test.
+  5. Docs and changelog.
+  Note: implemented from the paper, not ported from a specific licensed codebase.
+  The original "re-engineer a licensed codebase with source/SHA/license
+  attribution" exercise still needs a real source to port, chosen by the founder,
+  and is intentionally left open rather than faked.
 - [ ] Production harness: a scheduled job that repriced a small paper book.
   1. A GitHub Actions cron workflow.
   2. The paper-book repricer that pulls the live chain and rebuilds the surface.
