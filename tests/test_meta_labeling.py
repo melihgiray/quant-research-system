@@ -4,7 +4,13 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from quant_system.signals.meta_labeling import meta_labels, primary_side
+from quant_system.signals.ml_signal import FEATURE_NAMES
+from quant_system.signals.meta_labeling import (
+    meta_labels,
+    meta_probability_panel,
+    primary_side,
+    train_meta_model,
+)
 
 
 def _proba():
@@ -55,3 +61,41 @@ def test_meta_label_is_nan_where_no_bet_or_no_return():
     labels = meta_labels(side, nxt)
     assert np.isnan(labels.loc[side.index[2], "A"])  # primary stood aside
     assert np.isnan(labels.loc[side.index[2], "B"])  # missing side and return
+
+
+def _learnable_panels(n=500, seed=0):
+    # The primary is right exactly when mom_5 > 0, so the meta-model has a real
+    # pattern to learn: "trust the side when momentum agrees".
+    rng = np.random.default_rng(seed)
+    idx = pd.bdate_range("2019-01-01", periods=n)
+    tickers = ["A", "B", "C"]
+    features = {t: pd.DataFrame(rng.normal(size=(n, len(FEATURE_NAMES))),
+                                index=idx, columns=FEATURE_NAMES) for t in tickers}
+    side = pd.DataFrame(rng.choice([-1.0, 1.0], size=(n, 3)), index=idx, columns=tickers)
+    nxt = pd.DataFrame(index=idx, columns=tickers, dtype=float)
+    for t in tickers:
+        right = features[t]["mom_5"] > 0
+        nxt[t] = np.where(right, side[t] * 0.01, -side[t] * 0.01)
+    return features, side, nxt
+
+
+def test_meta_model_learns_when_to_trust_the_side():
+    features, side, nxt = _learnable_panels()
+    fit_end = features["A"].index[-1]
+    model = train_meta_model(features, side, nxt, fit_end, train_window=600)
+    assert model is not None
+    proba = meta_probability_panel(model, features, side)
+    # Valid probabilities where a bet exists, NaN where the primary stood aside.
+    vals = proba.to_numpy()[~np.isnan(proba.to_numpy())]
+    assert vals.min() >= 0.0 and vals.max() <= 1.0
+    # The model should assign higher P(correct) when momentum agrees with the bet.
+    agree = features["A"]["mom_5"] > 0
+    pa = proba["A"]
+    assert pa[agree].mean() > pa[~agree].mean()
+
+
+def test_meta_model_is_none_on_single_class_labels():
+    features, side, nxt = _learnable_panels()
+    nxt = side * 0.01                                # every bet wins -> only one class
+    fit_end = features["A"].index[-1]
+    assert train_meta_model(features, side, nxt, fit_end, train_window=600) is None
