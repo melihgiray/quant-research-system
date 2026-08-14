@@ -3,7 +3,11 @@
 import numpy as np
 import pytest
 
-from quant_system.options.svi import SVIParams, svi_total_variance
+from quant_system.options.svi import (
+    SVIParams,
+    fit_svi_slice,
+    svi_total_variance,
+)
 
 
 def _params():
@@ -35,3 +39,36 @@ def test_vectorises_over_k():
     out = svi_total_variance(np.linspace(-1, 1, 11), p)
     assert out.shape == (11,)
     assert (out > 0).all()
+
+
+def test_fit_recovers_a_known_smile():
+    p = _params()
+    k = np.linspace(-0.6, 0.6, 21)
+    w = svi_total_variance(k, p)
+    fitted, rmse = fit_svi_slice(k, w)
+    assert rmse < 1e-6                                   # the curve is recovered exactly
+    assert np.allclose(svi_total_variance(k, fitted), w, atol=1e-5)
+
+
+def test_fit_is_robust_to_small_noise():
+    p = _params()
+    k = np.linspace(-0.6, 0.6, 25)
+    rng = np.random.default_rng(0)
+    w = svi_total_variance(k, p) + rng.normal(0.0, 1e-4, k.size)
+    _, rmse = fit_svi_slice(k, w)
+    assert rmse < 5e-4                                   # fit tracks the noisy smile closely
+
+
+def test_fit_enforces_parameter_bounds():
+    p = _params()
+    k = np.linspace(-0.5, 0.5, 15)
+    w = svi_total_variance(k, p)
+    fitted, _ = fit_svi_slice(k, w)
+    assert fitted.b >= 0.0
+    assert -1.0 < fitted.rho < 1.0
+    assert fitted.sigma > 0.0
+
+
+def test_fit_needs_enough_points():
+    with pytest.raises(ValueError, match="at least 5 points"):
+        fit_svi_slice(np.array([0.0, 0.1, 0.2]), np.array([0.04, 0.03, 0.05]))
