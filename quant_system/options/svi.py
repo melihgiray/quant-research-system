@@ -73,3 +73,39 @@ def fit_svi_slice(k, w, weights: Optional[np.ndarray] = None,
     params = SVIParams(*sol.x)
     rmse = float(np.sqrt(np.mean((svi_total_variance(k, params) - w) ** 2)))
     return params, rmse
+
+
+def svi_derivatives(k, params: SVIParams):
+    """Return (w, w', w'') of raw SVI at ``k`` analytically."""
+    k = np.asarray(k, dtype=float)
+    centred = k - params.m
+    root = np.sqrt(centred ** 2 + params.sigma ** 2)
+    w = params.a + params.b * (params.rho * centred + root)
+    w1 = params.b * (params.rho + centred / root)
+    w2 = params.b * params.sigma ** 2 / root ** 3
+    return w, w1, w2
+
+
+def durability_g(k, params: SVIParams):
+    """Gatheral's g(k): the risk-neutral density is proportional to it, so a slice
+    is free of butterfly arbitrage exactly where g(k) >= 0."""
+    k = np.asarray(k, dtype=float)
+    w, w1, w2 = svi_derivatives(k, params)
+    return (1 - k * w1 / (2 * w)) ** 2 - (w1 ** 2 / 4) * (1 / w + 0.25) + w2 / 2
+
+
+def is_butterfly_arbitrage_free(params: SVIParams, k_grid=None,
+                                tol: float = 1e-8) -> Tuple[bool, float]:
+    """Check a fitted slice for butterfly arbitrage over a grid of log-moneyness.
+
+    Returns (is_free, min_g): the slice is arbitrage-free when total variance is
+    positive everywhere and Gatheral's g(k) stays non-negative. ``min_g`` is the
+    worst point, so a small negative value flags a marginal violation.
+    """
+    if k_grid is None:
+        k_grid = np.linspace(-2.0, 2.0, 401)
+    g = durability_g(k_grid, params)
+    w = svi_total_variance(k_grid, params)
+    min_g = float(np.min(g))
+    is_free = bool((w > 0).all() and min_g >= -tol)
+    return is_free, min_g
