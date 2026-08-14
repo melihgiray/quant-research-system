@@ -310,8 +310,11 @@ python -m quant_system.cli --strategy all --universe all
 ```
 
 Flags worth knowing: `--strategy {momentum,pairs,ml,all}`, `--synthetic`,
-`--no-walk-forward`, `--bootstrap`, `--capacity`, `--shap`, `--rf 0.04`. Run
-`pytest` for the test suite.
+`--no-walk-forward`, `--bootstrap`, `--capacity`, `--shap`, `--next-open`,
+`--rf 0.04`. `--next-open` fills signals at the next open instead of the
+signal-day close, which drops the overnight gap you cannot actually trade on; it
+needs open prices, so it works on synthetic or freshly fetched data (older caches
+predate the open column). Run `pytest` for the test suite.
 
 Every number this project claims about itself comes from one command:
 

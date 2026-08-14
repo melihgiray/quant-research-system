@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.18.0 - next-open fills
+
+- Prices now carry an optional open: `PriceData.open` (and `has_open`), produced
+  by the synthetic generator as yesterday's close plus a small overnight gap, and
+  carried through the yfinance fetch, the parquet cache and alignment. Open is
+  exposed only when every ticker in a panel has it, so a partial panel never
+  silently disables the mode for some names.
+- `backtest/engine.py` gains `portfolio_returns_next_open` and a `fill` argument
+  on `run_backtest`. Under next-open execution the signal formed at close(T) is
+  filled at open(T+1) and earns the open-to-open return, giving up the overnight
+  gap it can no longer trade on. The held book, turnover and costs are unchanged,
+  since they do not depend on which price P&L is marked at; the fill is causal by
+  construction (the weight is still lagged a day).
+- The fill mode threads through `walk_forward` and a new `--next-open` CLI flag,
+  which degrades to close-fill with a clear message when the loaded panel has no
+  open prices.
+- The existing cached parquet files predate the open column, so real-data
+  next-open runs need a cache refresh; the mode is fully exercised on synthetic
+  data, where opens are always present.
+- 10 new tests (257 total).
+
 ## 0.17.0 - meta-labeling the ML sleeve
 
 - `signals/meta_labeling.py`: meta-labeling (Lopez de Prado). `primary_side`
