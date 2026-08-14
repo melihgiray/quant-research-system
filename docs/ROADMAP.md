@@ -65,7 +65,7 @@ they merge. The list is a guide, not a quota.
   3. Sample-uniqueness (label concurrency) weights + test.
   4. Route `train_predict` through the pipeline.
   5. Docs and changelog.
-- [ ] Meta-labeling: a second model decides whether and how big to act.
+- [x] Meta-labeling: a second model decides whether and how big to act.
   1. Extract the primary signal's side + test.
   2. Train the secondary model on meta-labels + test.
   3. Size from the meta-probability + test.
