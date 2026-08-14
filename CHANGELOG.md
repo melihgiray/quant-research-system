@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.21.0 - HRP allocation across strategy sleeves
+
+- `portfolio/allocator.py` gains `hrp_allocations`: a causal rolling
+  Hierarchical Risk Parity allocation across the sleeves, the correlation-aware
+  counterpart to `inverse_vol_allocations`. It refits `hrp_weights` on the
+  trailing window every 21 days and holds between refits; every row is fit on
+  returns strictly before its day.
+- `scripts/build_hrp_blend_results.py` combines the three sleeves into one
+  10%-vol book three ways (inverse-vol, HRP, equal weight) and scores them on the
+  same window. The window alignment matters: HRP warms up longer than
+  inverse-vol, and scoring them over different date ranges flipped the
+  inverse-vol Sharpe from -0.38 to 0.09, so all books are trimmed to a common
+  index before metrics.
+- The finding: both risk-based methods beat naive equal weight (which loads the
+  two losing sleeves), and HRP edges out inverse-vol (0.26 vs 0.09 Sharpe). Both
+  realize well under the 10% target because they concentrate into the low-vol
+  pairs sleeve and the leverage cap binds, which the README explains rather than
+  papers over.
+- 3 new tests (273 total).
+
 ## 0.20.0 - realized-vol vs GARCH regime sizing comparison
 
 - `scripts/build_regime_results.py` wires the GARCH regime (added in 0.15) into a
