@@ -28,3 +28,16 @@ def primary_side(proba: pd.DataFrame, deadband: float = 0.0) -> pd.DataFrame:
     side = np.sign(signal)                                # -1/0/+1, NaN where no P(up)
     side = side.where(signal.abs() >= deadband, 0.0)      # inside the deadband -> stand aside
     return side.where(proba.notna())                      # restore NaN where there was no prediction
+
+
+def meta_labels(side: pd.DataFrame, next_returns: pd.DataFrame) -> pd.DataFrame:
+    """1 where the primary side made money, 0 where it lost, NaN where no bet.
+
+    The meta-model's target: for each bet the primary actually took (side != 0),
+    did the next-period return go the primary's way. Rows where the primary stood
+    aside, or where the return is missing, are NaN and drop out of training.
+    """
+    aligned = next_returns.reindex_like(side)
+    pnl = side * aligned
+    labels = (pnl > 0).astype(float)
+    return labels.where((side != 0) & side.notna() & aligned.notna())
