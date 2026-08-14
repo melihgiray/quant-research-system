@@ -79,6 +79,7 @@ def walk_forward(
     cost: Optional[CostConfig] = None,
     verbose: bool = True,
     execution: Optional["ExecutionConfig"] = None,
+    fill: str = "close",
 ) -> WalkForwardResult:
     """Run expanding/rolling walk-forward and return the concatenated OOS record.
 
@@ -126,7 +127,8 @@ def walk_forward(
         # Run the engine on the full panel (so rolling cost stats have history),
         # then keep only the OOS slice - that slice used no future information.
         res: BacktestResult = run_backtest(weights, price_data, cost=cost,
-                                           check_lookahead=True, execution=execution)
+                                           check_lookahead=True, execution=execution,
+                                           fill=fill)
 
         seg_ret = res.returns.loc[oos_dates]
         seg_to = res.turnover.loc[oos_dates]

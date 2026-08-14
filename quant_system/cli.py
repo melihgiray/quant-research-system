@@ -111,7 +111,7 @@ def _ml_weights_fn(cfg, regime, use_regime):
 
 def run_one_strategy(name: str, pdat, cfg: Config, regime, rf: float,
                      use_regime: bool, walk: bool, n_trials: int = 1,
-                     bootstrap: bool = False) -> Optional[dict]:
+                     bootstrap: bool = False, next_open: bool = False) -> Optional[dict]:
     """Run a single strategy end-to-end; return a dict of artefacts or None."""
     universe_data = pdat  # signals operate on the loaded panel (factor ETFs ignored by ranking)
 
@@ -145,15 +145,24 @@ def run_one_strategy(name: str, pdat, cfg: Config, regime, rf: float,
     else:
         raise ValueError(f"unknown strategy {name!r}")
 
+    # Fill mode: next-open needs open prices, which older caches predate.
+    fill = "close"
+    if next_open:
+        if sig_universe.has_open:
+            fill = "next_open"
+        else:
+            print("[cli] --next-open requested but this panel has no open prices "
+                  "(cache predates them; refresh it or use --synthetic). Using close fill.")
+
     # Walk-forward (preferred) or single full-sample backtest.
     if walk:
         wf = walk_forward(sig_universe, make, cfg.walk_forward, cfg.cost, verbose=True,
-                          execution=cfg.execution)
+                          execution=cfg.execution, fill=fill)
         returns, turnover = wf.returns, wf.turnover
         span_note = f"walk-forward OOS, {wf.n_folds} folds, {wf.oos_span}"
     else:
         w = make(sig_universe, sig_universe.close.index[-1])
-        res = run_backtest(w, sig_universe, cost=cfg.cost, execution=cfg.execution)
+        res = run_backtest(w, sig_universe, cost=cfg.cost, execution=cfg.execution, fill=fill)
         returns, turnover = res.returns, res.turnover
         span_note = "full-sample (no walk-forward)"
 
@@ -214,6 +223,9 @@ def main(argv: Optional[List[str]] = None) -> int:
                    help="score the ML classifier with purged, embargoed K-fold CV")
     p.add_argument("--feature-fdr", action="store_true",
                    help="permutation-null p-value per ML feature, FDR-corrected")
+    p.add_argument("--next-open", action="store_true",
+                   help="fill signals at the next open instead of the signal-day close "
+                        "(needs open prices; available on synthetic or freshly fetched data)")
     p.add_argument("--max-participation", type=float, default=None, metavar="FRAC",
                    help="cap daily trading in a name at this fraction of its ADV "
                         "(e.g. 0.05); unfilled amounts carry to later days")
@@ -247,7 +259,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     for name in strategies:
         try:
             art = run_one_strategy(name, pdat, cfg, regime, rf, use_regime, walk,
-                                   n_trials=args.n_trials, bootstrap=args.bootstrap)
+                                   n_trials=args.n_trials, bootstrap=args.bootstrap,
+                                   next_open=args.next_open)
             if art:
                 artefacts[name] = art
         except Exception as exc:

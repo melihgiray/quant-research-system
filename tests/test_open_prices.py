@@ -110,3 +110,18 @@ def test_run_backtest_next_open_requires_open_prices():
     w = pd.DataFrame(0.0, index=panel.close.index, columns=panel.close.columns)
     with pytest.raises(ValueError, match="requires open prices"):
         run_backtest(w, stripped, fill="next_open")
+
+
+def test_walk_forward_threads_the_fill_mode():
+    from quant_system.backtest.walk_forward import walk_forward
+    panel = load_price_data(universe("largecaps")[:5], "2017-01-01", "2021-12-31",
+                            use_synthetic=True)
+
+    def make(pdata, fit_end):
+        return pd.DataFrame(1.0 / pdata.close.shape[1], index=pdata.close.index,
+                            columns=pdata.close.columns)
+
+    close_wf = walk_forward(panel, make, fill="close", verbose=False)
+    open_wf = walk_forward(panel, make, fill="next_open", verbose=False)
+    assert len(open_wf.returns) == len(close_wf.returns)
+    assert not np.allclose(close_wf.returns.to_numpy(), open_wf.returns.to_numpy())
