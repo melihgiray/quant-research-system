@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.17.0 - meta-labeling the ML sleeve
+
+- `signals/meta_labeling.py`: meta-labeling (Lopez de Prado). `primary_side`
+  extracts the directional model's side, `meta_labels` marks whether that side
+  was right, `train_meta_model` fits a secondary classifier to grade it, and
+  `meta_sized_weights` sizes each bet by the meta-model's conviction above a coin
+  flip, vetoing the ones below it. `meta_train_predict` wires the two models into
+  one walk-forward callback and degrades to the primary's own sizing if the
+  meta-model cannot be fit.
+- The meta pooling uses the same strict `< fit_end` cut as the primary, so the
+  secondary never trains on an out-of-sample label.
+- `scripts/build_meta_results.py` compares the sleeve with and without the meta
+  layer on the same data pull. Result: meta-labeling nudges the Sharpe up
+  (-0.70 to -0.64) and, more usefully, cuts the drawdown (-24.4% to -20.3%) by
+  vetoing some bad bets, but it does not turn a negative-edge signal positive. A
+  filter on a losing signal is still a losing signal, and the README says so.
+- 10 new tests (247 total).
+
 ## 0.16.0 - fat-tail risk: Cornish-Fisher, EVT, and stress scenarios
 
 - `risk/metrics.py` gains `cornish_fisher_var`: the Gaussian VaR quantile
