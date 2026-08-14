@@ -7,6 +7,7 @@ import pytest
 from quant_system.backtest.engine import (
     portfolio_returns,
     portfolio_returns_next_open,
+    run_backtest,
 )
 from quant_system.data.loader import PriceData, _align, load_price_data
 from quant_system.data.universe import universe
@@ -89,3 +90,23 @@ def test_next_open_differs_from_close_fill_with_overnight_gaps():
     close_pnl = portfolio_returns(w, close_ret)
     open_pnl = portfolio_returns_next_open(w, panel.open)
     assert not np.allclose(close_pnl.to_numpy(), open_pnl.to_numpy())
+
+
+def test_run_backtest_next_open_runs_and_differs_from_close():
+    panel = load_price_data(universe("largecaps")[:4], "2018-01-01", "2020-12-31",
+                            use_synthetic=True)
+    w = pd.DataFrame(1.0 / panel.close.shape[1], index=panel.close.index,
+                     columns=panel.close.columns)
+    close_run = run_backtest(w, panel, fill="close")
+    open_run = run_backtest(w, panel, fill="next_open")
+    assert len(open_run.returns) == len(close_run.returns)
+    assert not np.allclose(close_run.returns.to_numpy(), open_run.returns.to_numpy())
+
+
+def test_run_backtest_next_open_requires_open_prices():
+    panel = load_price_data(universe("largecaps")[:4], "2018-01-01", "2019-12-31",
+                            use_synthetic=True)
+    stripped = PriceData(panel.close, panel.volume, synthetic=True)   # no open
+    w = pd.DataFrame(0.0, index=panel.close.index, columns=panel.close.columns)
+    with pytest.raises(ValueError, match="requires open prices"):
+        run_backtest(w, stripped, fill="next_open")

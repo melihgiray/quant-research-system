@@ -130,6 +130,7 @@ def run_backtest(
     apply_drawdown_stop: bool = False,
     check_lookahead: bool = True,
     execution: Optional[ExecutionConfig] = None,
+    fill: str = "close",
 ) -> BacktestResult:
     """Run a full backtest: lagged P&L, realistic costs, optional drawdown stop.
 
@@ -151,6 +152,13 @@ def run_backtest(
         Volume-participation cap. When set, each day's trade in a name is
         limited to a fraction of its ADV and the remainder carries to later
         days, so the held book chases the target instead of teleporting to it.
+    fill : {"close", "next_open"}
+        How the gross P&L is priced. "close" assumes you trade at the same close
+        that formed the signal. "next_open" is stricter: the signal at close(T)
+        is filled at open(T+1), so the book earns open-to-open returns and gives
+        up the overnight gap it can no longer trade on. Requires open prices.
+        Turnover and impact costs are still sized on close-based liquidity, which
+        is a deliberate approximation.
 
     Returns
     -------
@@ -184,7 +192,20 @@ def run_backtest(
     target_held = w.shift(1).fillna(0.0)
     held, fill_gap = apply_execution(target_held, close, adv, cost.capital, execution)
 
-    gross = (held * returns).sum(axis=1)
+    # Gross P&L basis: close-to-close, or open-to-open under next-open execution.
+    # Only the return the book earns changes; the held book, turnover and costs
+    # are identical, since they do not depend on which price you mark P&L at.
+    if fill == "next_open":
+        if not getattr(price_data, "has_open", False):
+            raise ValueError("next_open fill requires open prices; this panel has none")
+        op = price_data.open.reindex(index=returns.index, columns=cols)
+        pnl_returns = op.shift(-1) / op - 1.0
+    elif fill == "close":
+        pnl_returns = returns
+    else:
+        raise ValueError(f"unknown fill mode: {fill!r}")
+
+    gross = (held * pnl_returns).sum(axis=1)
 
     # Trades executed each day = change in held book. First row establishes the book.
     trades = held.diff()
