@@ -101,6 +101,33 @@ return here by leaning into a strong-equity decade, but pays for it in the
 highest volatility and the deepest drawdown, which is the whole point of a
 risk-based allocator.
 
+### Allocating across the sleeves: inverse-vol vs HRP
+
+The blended book above splits capital across the three sleeves by inverse
+volatility. HRP is the correlation-aware alternative: cluster the sleeves and
+split the risk budget down the tree. This runs both (and naive equal weight) on
+the same three out-of-sample sleeve streams, each combined into one 10%-vol
+book, scored on the same window. Reproduce with
+`python scripts/build_hrp_blend_results.py`.
+
+| Sleeve allocation | OOS Sharpe | Ann. return | Ann. vol | Max drawdown |
+|---|---|---|---|---|
+| Inverse-vol blend | 0.09 | +0.2% | 2.7% | -4.8% |
+| HRP blend | 0.26 | +0.9% | 3.4% | -6.7% |
+| Equal-weight blend | -0.02 | -0.7% | 9.5% | -17.3% |
+
+Two honest readings. First, both risk-based methods decisively beat naive equal
+weight, because equal weight hands a third of the book each to the two losing
+sleeves (near-zero momentum and negative-edge ML) while the risk-based methods
+starve them; HRP edges out inverse-vol here, so the correlation-aware step earns
+a little even with only three sleeves. Second, a caveat that matters: both
+risk-based books realize far below the 10% target (2.7 and 3.4%), because they
+concentrate into the low-volatility pairs sleeve and the 3x leverage cap then
+binds, so it cannot lever the calm book back up to target. The low realized vol
+is a consequence of the concentration, not a bug to force away. The absolute
+Sharpes are small because the sleeves are weak; the comparison is about the
+allocation, not a claim that this book is good.
+
 ### Meta-labeling the ML sleeve
 
 Meta-labeling (Lopez de Prado) splits the ML sleeve in two: the directional
