@@ -3,9 +3,12 @@
 import numpy as np
 import pytest
 
+import pandas as pd
+
 from quant_system.options.svi import (
     SVIParams,
     durability_g,
+    fit_svi_points,
     fit_svi_slice,
     is_butterfly_arbitrage_free,
     svi_derivatives,
@@ -102,3 +105,33 @@ def test_pathological_slice_has_butterfly_arbitrage():
     assert not ok
     assert min_g < 0
     assert (durability_g(np.linspace(-2, 2, 401), bad) < 0).any()
+
+
+def _points_two_expiries():
+    near = SVIParams(a=0.010, b=0.10, rho=-0.30, m=0.02, sigma=0.10)
+    far = SVIParams(a=0.030, b=0.18, rho=-0.35, m=0.03, sigma=0.14)
+    k = np.linspace(-0.5, 0.5, 15)
+    frames = []
+    for tte, p in ((0.08, near), (0.50, far)):
+        frames.append(pd.DataFrame({
+            "time_to_expiry": tte,
+            "log_moneyness": k,
+            "total_variance": svi_total_variance(k, p),
+        }))
+    return pd.concat(frames, ignore_index=True)
+
+
+def test_fit_points_returns_a_row_per_expiry():
+    result = fit_svi_points(_points_two_expiries())
+    assert len(result) == 2
+    assert set(["a", "b", "rho", "m", "sigma", "rmse", "arb_free", "min_g"]).issubset(result.columns)
+    assert (result["rmse"] < 1e-5).all()                # each smile is recovered
+    assert result["arb_free"].all()
+
+
+def test_fit_points_skips_thin_expiries():
+    pts = _points_two_expiries()
+    thin = pd.DataFrame({"time_to_expiry": 1.0, "log_moneyness": [0.0, 0.1, 0.2],
+                         "total_variance": [0.04, 0.03, 0.05]})
+    result = fit_svi_points(pd.concat([pts, thin], ignore_index=True))
+    assert set(result["time_to_expiry"]) == {0.08, 0.50}   # the 3-point expiry is dropped

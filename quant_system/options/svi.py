@@ -21,6 +21,7 @@ from dataclasses import dataclass
 from typing import Optional, Tuple
 
 import numpy as np
+import pandas as pd
 from scipy.optimize import least_squares
 
 
@@ -109,3 +110,38 @@ def is_butterfly_arbitrage_free(params: SVIParams, k_grid=None,
     min_g = float(np.min(g))
     is_free = bool((w > 0).all() and min_g >= -tol)
     return is_free, min_g
+
+
+def fit_svi_points(points: pd.DataFrame, weight_by_spread: bool = True,
+                   min_points: int = 5) -> pd.DataFrame:
+    """Fit an SVI slice to every expiry in a surface's point table.
+
+    ``points`` needs ``time_to_expiry``, ``log_moneyness`` and ``total_variance``
+    columns (as produced by the surface builder); a ``spread`` column, when
+    present and ``weight_by_spread`` is set, weights tighter quotes more heavily.
+    Returns one row per expiry with the fitted parameters, the RMS fit error, and
+    the butterfly no-arbitrage verdict.
+    """
+    rows = []
+    for t, sel in points.groupby("time_to_expiry"):
+        sel = sel.sort_values("log_moneyness")
+        k = sel["log_moneyness"].to_numpy(dtype=float)
+        w = sel["total_variance"].to_numpy(dtype=float)
+        if len(k) < min_points:
+            continue
+        weights = None
+        if weight_by_spread and "spread" in sel.columns:
+            spread = sel["spread"].to_numpy(dtype=float)
+            weights = np.where(spread > 0, 1.0 / np.where(spread > 0, spread, 1.0), 1.0)
+        params, rmse = fit_svi_slice(k, w, weights=weights)
+        arb_free, min_g = is_butterfly_arbitrage_free(params)
+        rows.append({"time_to_expiry": float(t), "a": params.a, "b": params.b,
+                     "rho": params.rho, "m": params.m, "sigma": params.sigma,
+                     "rmse": rmse, "arb_free": arb_free, "min_g": min_g,
+                     "n_points": int(len(k))})
+    return pd.DataFrame(rows)
+
+
+def fit_svi_surface(surface) -> pd.DataFrame:
+    """Fit SVI to each expiry of a built :class:`VolSurface` (see ``fit_svi_points``)."""
+    return fit_svi_points(surface.points)
