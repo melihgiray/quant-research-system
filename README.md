@@ -101,6 +101,28 @@ return here by leaning into a strong-equity decade, but pays for it in the
 highest volatility and the deepest drawdown, which is the whole point of a
 risk-based allocator.
 
+### Meta-labeling the ML sleeve
+
+Meta-labeling (Lopez de Prado) splits the ML sleeve in two: the directional
+model still picks the side, but a second model grades that side (is this bet
+likely right) and sets the size, vetoing the ones it is unsure about. The point
+is precision, cutting false positives, not a new source of edge. Both legs below
+run the same real-data walk-forward with the same regime sizing on the same data
+pull, so the only difference is the meta layer. Reproduce with
+`python scripts/build_meta_results.py`.
+
+| ML sleeve | OOS Sharpe | Ann. return | Max drawdown | Turnover |
+|---|---|---|---|---|
+| ML primary | -0.70 | -2.9% | -24.4% | 113.4x |
+| ML meta-labeled | -0.64 | -2.4% | -20.3% | 113x |
+
+The honest reading: meta-labeling helps at the margin, a slightly better Sharpe
+and a meaningfully shallower drawdown (it does veto some of the worst bets), but
+it cannot rescue a signal whose underlying edge is negative after costs. A filter
+on a losing signal is still a losing signal. The absolute numbers here differ a
+little from the ML row in the top table because yfinance revises history between
+pulls; what is comparable is the primary-versus-meta pair, which share one pull.
+
 ## What's in it
 
 Three strategies:
