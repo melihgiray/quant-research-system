@@ -4,6 +4,10 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from quant_system.backtest.engine import (
+    portfolio_returns,
+    portfolio_returns_next_open,
+)
 from quant_system.data.loader import PriceData, _align, load_price_data
 from quant_system.data.universe import universe
 
@@ -52,3 +56,36 @@ def test_align_needs_open_for_every_ticker():
     assert _align(close, vol, ["A", "B"], partial).open is None
     full = {"A": close["A"], "B": close["B"]}
     assert _align(close, vol, ["A", "B"], full).has_open
+
+
+def test_next_open_returns_earn_the_open_to_open_interval():
+    idx = pd.bdate_range("2021-01-01", periods=4)
+    opn = pd.DataFrame({"A": [10.0, 11.0, 12.0, 13.0]}, index=idx)
+    w = pd.DataFrame({"A": [1.0, 1.0, 1.0, 1.0]}, index=idx)
+    r = portfolio_returns_next_open(w, opn)
+    assert r.iloc[0] == pytest.approx(0.0)               # weight not held yet
+    assert r.iloc[1] == pytest.approx(12.0 / 11.0 - 1.0)  # open(t+1)/open(t) - 1
+    assert r.iloc[2] == pytest.approx(13.0 / 12.0 - 1.0)
+    assert r.iloc[3] == pytest.approx(0.0)               # no next open -> earns nothing
+
+
+def test_next_open_is_causal_in_the_weights():
+    idx = pd.bdate_range("2021-01-01", periods=6)
+    opn = pd.DataFrame({"A": np.linspace(10, 15, 6)}, index=idx)
+    w = pd.DataFrame({"A": [1.0, 1, 1, 1, 1, 1]}, index=idx)
+    base = portfolio_returns_next_open(w, opn)
+    w2 = w.copy()
+    w2.iloc[4:] = -3.0                                    # change weights from t=4 on
+    after = portfolio_returns_next_open(w2, opn)
+    pd.testing.assert_series_equal(base.iloc[:4], after.iloc[:4])   # earlier P&L unchanged
+
+
+def test_next_open_differs_from_close_fill_with_overnight_gaps():
+    panel = load_price_data(universe("largecaps")[:3], "2019-01-01", "2020-12-31",
+                            use_synthetic=True)
+    close_ret = panel.close.pct_change()
+    w = pd.DataFrame(1.0 / panel.close.shape[1], index=panel.close.index,
+                     columns=panel.close.columns)
+    close_pnl = portfolio_returns(w, close_ret)
+    open_pnl = portfolio_returns_next_open(w, panel.open)
+    assert not np.allclose(close_pnl.to_numpy(), open_pnl.to_numpy())

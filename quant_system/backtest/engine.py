@@ -105,6 +105,23 @@ def portfolio_returns(weights: pd.DataFrame, returns: pd.DataFrame) -> pd.Series
     return (held * returns).sum(axis=1)
 
 
+def portfolio_returns_next_open(weights: pd.DataFrame, open_prices: pd.DataFrame) -> pd.Series:
+    """Pure core for next-open execution: signal at close(T), fill at open(T+1).
+
+    The close-fill core assumes you can trade at the same close you used to form
+    the signal. Next-open execution is stricter and more honest: the weight formed
+    at the close of day T is filled at the open of T+1 and held to the open of
+    T+2, so it earns the open-to-open return over that interval. That interval is
+    ``open.shift(-1) / open - 1`` indexed at T+1, and the weight is ``w.shift(1)``
+    (formed at close T, known before open T+1), so no fill is ever priced with
+    information from its own bar. The final row has no next open and earns nothing.
+    """
+    interval = open_prices.shift(-1) / open_prices - 1.0     # today's open -> tomorrow's open
+    w = weights.reindex(index=open_prices.index, columns=open_prices.columns).ffill()
+    held = w.shift(1).fillna(0.0)
+    return (held * interval).sum(axis=1)
+
+
 def run_backtest(
     weights: pd.DataFrame,
     price_data,
