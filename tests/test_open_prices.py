@@ -4,7 +4,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from quant_system.data.loader import PriceData
+from quant_system.data.loader import PriceData, _align, load_price_data
+from quant_system.data.universe import universe
 
 
 def _panel_with_open():
@@ -30,3 +31,24 @@ def test_subset_preserves_open():
     assert sub.has_open
     assert list(sub.open.columns) == ["A"]
     assert sub.open.shape == sub.close.shape
+
+
+def test_synthetic_panel_carries_aligned_open():
+    panel = load_price_data(universe("largecaps")[:4], "2019-01-01", "2020-12-31",
+                            use_synthetic=True)
+    assert panel.has_open
+    assert list(panel.open.columns) == list(panel.close.columns)
+    assert panel.open.index.equals(panel.close.index)
+    assert (panel.open.to_numpy() > 0).all()
+    # Open is close-with-an-overnight-gap, so it differs from the prior close.
+    assert not np.allclose(panel.open.to_numpy()[1:], panel.close.to_numpy()[:-1])
+
+
+def test_align_needs_open_for_every_ticker():
+    idx = pd.bdate_range("2021-01-01", periods=4)
+    close = pd.DataFrame({"A": [1.0, 2, 3, 4], "B": [5.0, 6, 7, 8]}, index=idx)
+    vol = pd.DataFrame(1e6, index=idx, columns=["A", "B"])
+    partial = {"A": close["A"]}                          # B has no open
+    assert _align(close, vol, ["A", "B"], partial).open is None
+    full = {"A": close["A"], "B": close["B"]}
+    assert _align(close, vol, ["A", "B"], full).has_open

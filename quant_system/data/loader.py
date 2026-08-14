@@ -113,8 +113,8 @@ def load_price_data(
         return _synthetic_panel(tickers, start, end, seed)
 
     try:
-        close, volume = _load_real(tickers, start, end, cache_dir, verbose)
-        panel = _align(close, volume, tickers)
+        close, volume, opens = _load_real(tickers, start, end, cache_dir, verbose)
+        panel = _align(close, volume, tickers, opens)
         if panel.close.shape[1] == 0:
             raise RuntimeError("no tickers returned any data")
         return panel
@@ -137,17 +137,24 @@ def _cache_path(cache_dir: str, ticker: str) -> str:
 
 
 def _load_real(tickers, start, end, cache_dir, verbose):
-    """Return (close_df, volume_df) assembled from cache + yfinance."""
+    """Return (close_df, volume_df, opens) assembled from cache + yfinance.
+
+    ``opens`` maps ticker -> open series for the tickers that carried one (older
+    caches predate the open column); callers get open prices only when every
+    loaded ticker has them.
+    """
     os.makedirs(cache_dir, exist_ok=True)
     start_ts, end_ts = pd.Timestamp(start), pd.Timestamp(end)
 
-    closes, volumes = {}, {}
+    closes, volumes, opens = {}, {}, {}
     to_fetch = []
     for t in tickers:
         cached = _read_cache(cache_dir, t)
         if cached is not None and cached.index.min() <= start_ts and cached.index.max() >= end_ts:
             sl = cached.loc[start_ts:end_ts]
             closes[t], volumes[t] = sl["close"], sl["volume"]
+            if "open" in sl.columns:
+                opens[t] = sl["open"]
         else:
             to_fetch.append(t)
 
@@ -162,13 +169,15 @@ def _load_real(tickers, start, end, cache_dir, verbose):
             _write_cache(cache_dir, t, df)
             sl = df.loc[start_ts:end_ts]
             closes[t], volumes[t] = sl["close"], sl["volume"]
+            if "open" in sl.columns:
+                opens[t] = sl["open"]
 
     if not closes:
         raise RuntimeError("yfinance returned no usable data for any ticker")
 
     close = pd.DataFrame(closes).sort_index()
     volume = pd.DataFrame(volumes).reindex_like(close)
-    return close, volume
+    return close, volume, opens
 
 
 def _read_cache(cache_dir, ticker) -> Optional[pd.DataFrame]:
@@ -219,9 +228,10 @@ def _yf_download(tickers, start, end) -> dict:
                 sub = raw
             else:
                 sub = raw[t]
-            df = pd.DataFrame(
-                {"close": sub["Close"], "volume": sub["Volume"]}
-            ).dropna(how="all")
+            cols = {"close": sub["Close"], "volume": sub["Volume"]}
+            if "Open" in sub:
+                cols["open"] = sub["Open"]
+            df = pd.DataFrame(cols).dropna(how="all")
             df.index = pd.to_datetime(df.index)
             if not df.empty:
                 out[t] = df.sort_index()
@@ -303,16 +313,31 @@ def _synthetic_panel(tickers, start, end, seed) -> PriceData:
                 u[i] = (1 - kappa) * u[i - 1] + rng.normal(0.0, resid_vol)
             close_cols[b] = np.exp(c0 + c1 * log_a + u)
 
+    # Open prices: yesterday's close moved by a small overnight gap, so the
+    # next-open fill mode has a real open/close spread to price against (a zero
+    # gap would make next-open identical to close-fill). Derived from the final
+    # closes, after the cointegration override, so opens stay consistent.
+    open_cols = {}
+    for t in tickers:
+        c = np.asarray(close_cols[t], dtype=float)
+        rng = np.random.default_rng(_ticker_seed(t + "_open", seed))
+        overnight = rng.normal(0.0, 0.003, n)      # ~0.3% overnight gap
+        op = np.empty(n)
+        op[0] = c[0]
+        op[1:] = c[:-1] * (1.0 + overnight[1:])
+        open_cols[t] = op
+
     close = pd.DataFrame(close_cols, index=dates)
     volume = pd.DataFrame(vol_cols, index=dates)
-    return PriceData(close=close, volume=volume, synthetic=True)
+    open_ = pd.DataFrame(open_cols, index=dates)
+    return PriceData(close=close, volume=volume, synthetic=True, open=open_)
 
 
 # --------------------------------------------------------------------------- #
 # Alignment
 # --------------------------------------------------------------------------- #
-def _align(close, volume, tickers) -> PriceData:
-    """Drop tickers with no data, forward-fill small gaps, align both frames."""
+def _align(close, volume, tickers, opens=None) -> PriceData:
+    """Drop tickers with no data, forward-fill small gaps, align the frames."""
     close = close.reindex(columns=[t for t in tickers if t in close.columns])
     close = close.dropna(axis=1, how="all")
     # Forward-fill at most a few days of holidays/missing prints, then drop any
@@ -321,4 +346,11 @@ def _align(close, volume, tickers) -> PriceData:
     volume = volume.reindex(index=close.index, columns=close.columns).ffill(limit=3)
     close = close.dropna(how="all")
     volume = volume.reindex(index=close.index)
-    return PriceData(close=close, volume=volume, synthetic=False)
+
+    # Open prices only when every surviving ticker carries one; a partial open
+    # panel would silently disable next-open fills for some names.
+    open_df = None
+    if opens and all(t in opens for t in close.columns):
+        open_df = pd.DataFrame({t: opens[t] for t in close.columns})
+        open_df = open_df.reindex(index=close.index, columns=close.columns).ffill(limit=3)
+    return PriceData(close=close, volume=volume, synthetic=False, open=open_df)
