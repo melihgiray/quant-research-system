@@ -123,6 +123,30 @@ on a losing signal is still a losing signal. The absolute numbers here differ a
 little from the ML row in the top table because yfinance revises history between
 pulls; what is comparable is the primary-versus-meta pair, which share one pull.
 
+### Does forecasting volatility beat measuring it?
+
+Two ways to decide when to turn risk down. The vol-ratio detector compares
+trailing 21-day to 252-day realized volatility (backward-looking, slow). The
+GARCH detector uses a one-step-ahead conditional-volatility forecast against its
+own baseline (it reacts the day a shock lands). Both halve the sector-momentum
+sleeve's risk on a defensive day. Reproduce with
+`python scripts/build_regime_results.py`.
+
+| Defensive sizing | OOS Sharpe | Ann. return | Ann. vol | Max drawdown |
+|---|---|---|---|---|
+| No regime | -0.02 | -0.7% | 10.3% | -22.8% |
+| Vol-ratio regime | 0.00 | -0.4% | 9.3% | -20.8% |
+| GARCH regime | -0.25 | -2.6% | 9.0% | -30.3% |
+
+The honest reading: the fancier detector loses. GARCH sizing does deliver the
+lowest average volatility, but it turns risk down at the wrong moments (fast
+reactions whipsaw, cutting exposure just before rebounds), so it prints a worse
+Sharpe and a deeper drawdown than doing nothing, while the slow realized-vol
+detector edges out a small improvement. This is a narrow test, the base sleeve is
+a near-zero-Sharpe signal to begin with, so these are overlays on weak returns
+and the differences are small. But the direction is a useful antidote to the
+assumption that a more sophisticated volatility model automatically sizes better.
+
 ## What's in it
 
 Three strategies:
