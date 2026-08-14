@@ -18,7 +18,16 @@ from typing import Dict, Optional
 import numpy as np
 import pandas as pd
 
-from .ml_signal import FEATURE_NAMES, _fit_model, build_classifier
+from ..config import MLConfig
+from .ml_signal import (
+    FEATURE_NAMES,
+    _fit_model,
+    _pooled_training_set,
+    _proba_panel,
+    _weights_from_proba,
+    build_classifier,
+    compute_features,
+)
 
 META_COLUMNS = FEATURE_NAMES + ["side"]      # the meta-model sees the features plus the side taken
 
@@ -113,3 +122,68 @@ def meta_probability_panel(model, features: Dict[str, pd.DataFrame],
             p.loc[valid.index] = model.predict_proba(valid[META_COLUMNS].to_numpy())[:, 1]
         cols[t] = p
     return pd.DataFrame(cols)
+
+
+def _neutralize_and_cap(signal: pd.DataFrame, max_weight: float) -> pd.DataFrame:
+    """Cross-sectionally demean, gross-normalise to 1, and cap per name.
+
+    The same neutrality construction the primary uses in ``_weights_from_proba``:
+    demeaning keeps the book dollar-neutral, and the per-name cap is enforced by
+    scaling the whole row so the zero row-sum is preserved.
+    """
+    signal = signal.sub(signal.mean(axis=1), axis=0)
+    gross = signal.abs().sum(axis=1).replace(0.0, np.nan)
+    signal = signal.div(gross, axis=0)
+    mx = signal.abs().max(axis=1)
+    cap_scale = (max_weight / mx).clip(upper=1.0)
+    return signal.mul(cap_scale, axis=0).fillna(0.0)
+
+
+def meta_sized_weights(side: pd.DataFrame,
+                       meta_prob: pd.DataFrame,
+                       max_weight: float = 0.10,
+                       min_prob: float = 0.5) -> pd.DataFrame:
+    """Size each primary bet by the meta-model's conviction above a coin flip.
+
+    Conviction is ``max(P(correct) - min_prob, 0)``, so a bet the meta-model is
+    not sure about (P below ``min_prob``) is sized to zero: the meta-model's job
+    is to veto and scale, not to flip the side. The signed convictions are then
+    made dollar-neutral and capped like the primary book.
+    """
+    conviction = (meta_prob - min_prob).clip(lower=0.0)
+    signal = side.reindex_like(meta_prob).fillna(0.0) * conviction.fillna(0.0)
+    return _neutralize_and_cap(signal, max_weight)
+
+
+def meta_train_predict(price_data, fit_end, cfg: MLConfig = None,
+                       max_weight: float = 0.10, seed: int = 7,
+                       min_prob: float = 0.5) -> pd.DataFrame:
+    """Walk-forward callback: primary sets the side, meta-model sets the size.
+
+    Fits the directional model as the primary, takes its side, trains the meta-
+    model to grade that side, and sizes by meta-conviction. If the meta-model
+    cannot be fit (too little data, or the primary took only winning bets in
+    sample), it falls back to the primary's own sizing so the sleeve degrades to
+    the primary rather than going flat.
+    """
+    cfg = cfg or MLConfig()
+    if fit_end is None:
+        fit_end = price_data.close.index[-1]
+    features = compute_features(price_data, cfg)
+    rets = price_data.returns()
+    next_returns = rets.shift(-1)
+
+    X, y = _pooled_training_set(features, rets, fit_end, cfg.train_window)
+    if X is None or len(np.unique(y)) < 2:
+        return pd.DataFrame(0.0, index=price_data.close.index, columns=price_data.close.columns)
+
+    primary = build_classifier(seed)
+    _fit_model(primary, X, y)
+    proba = _proba_panel(primary, features)
+    side = primary_side(proba, cfg.prob_deadband)
+
+    meta_model = train_meta_model(features, side, next_returns, fit_end, cfg.train_window, seed)
+    if meta_model is None:
+        return _weights_from_proba(proba, cfg.prob_deadband, max_weight)
+    meta_prob = meta_probability_panel(meta_model, features, side)
+    return meta_sized_weights(side, meta_prob, max_weight, min_prob=min_prob)
