@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.19.0 - SVI arbitrage-free surface fit
+
+- `options/svi.py`: the raw-SVI smile parameterisation, implemented from the
+  published formula (Gatheral 2004; Gatheral and Jacquier 2014) rather than
+  ported from any specific codebase. `svi_total_variance` evaluates it and
+  `fit_svi_slice` calibrates the five parameters to one expiry by bounded least
+  squares, enforcing the feasibility constraints (b >= 0, |rho| < 1, sigma > 0)
+  directly and accepting per-quote weights so tighter markets pull harder.
+- `is_butterfly_arbitrage_free` checks a fitted slice with Gatheral's g(k)
+  function, whose sign is the sign of the risk-neutral density, using analytic
+  SVI derivatives cross-checked against finite differences. This gives a
+  parametric alternative to the interpolated surface, with the same refusal to
+  assume arbitrage away rather than test for it.
+- `fit_svi_points` / `fit_svi_surface` fit every expiry of a surface and report
+  the parameters, the RMS fit error and the no-arbitrage verdict per expiry.
+- 13 new tests (270 total).
+
 ## 0.18.0 - next-open fills
 
 - Prices now carry an optional open: `PriceData.open` (and `has_open`), produced

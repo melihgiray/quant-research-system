@@ -170,6 +170,11 @@ built from live chains, and strategy backtests.
   point: no-calendar-arbitrage is exactly "total variance rises with maturity",
   so interpolating there preserves it, while interpolating in implied vol can
   manufacture arbitrage from clean inputs.
+- A parametric **SVI** fit as an alternative to interpolation: the five-parameter
+  raw-SVI smile (implemented from the published Gatheral parameterization) is
+  least-squares calibrated per expiry with its feasibility bounds, and each
+  fitted slice is checked for butterfly arbitrage via Gatheral's g(k) density
+  condition rather than assumed clean.
 
 ![SPY vol surface](docs/results/vol_surface_spy.png)
 
