@@ -40,7 +40,7 @@ they merge. The list is a guide, not a quota.
 
 ## Realism and portfolio construction
 - [x] Volume-participation cap with partial fills that carry over days.
-- [ ] Next-open fills (needs open prices in the loader).
+- [x] Next-open fills (needs open prices in the loader).
   1. Carry the Open column through the loader and cache + test.
   2. Add a next-open fill mode to the engine + test.
   3. Config flag and CLI wiring.
