@@ -7,6 +7,7 @@ import pytest
 from quant_system.portfolio.allocator import (
     blend_returns,
     combine_weights,
+    hrp_allocations,
     inverse_vol_allocations,
     volatility_target,
 )
@@ -18,6 +19,16 @@ def _streams(n=400, seed=0):
     calm = pd.Series(rng.normal(0.0003, 0.004, n), index=idx)     # low vol
     jumpy = pd.Series(rng.normal(0.0003, 0.020, n), index=idx)    # 5x the vol
     return {"calm": calm, "jumpy": jumpy}
+
+
+def _three_streams(n=500, seed=0):
+    rng = np.random.default_rng(seed)
+    idx = pd.bdate_range("2019-01-01", periods=n)
+    return {
+        "a": pd.Series(rng.normal(0.0003, 0.006, n), index=idx),
+        "b": pd.Series(rng.normal(0.0002, 0.012, n), index=idx),
+        "c": pd.Series(rng.normal(0.0004, 0.009, n), index=idx),
+    }
 
 
 def test_lower_vol_sleeve_gets_more_capital():
@@ -51,6 +62,31 @@ def test_allocation_is_causal():
 def test_empty_input_raises():
     with pytest.raises(ValueError, match="at least one sleeve"):
         inverse_vol_allocations({})
+
+
+def test_hrp_allocations_warmup_is_zero_then_sums_to_one():
+    alloc = hrp_allocations(_three_streams(), lookback=60, refit_every=21)
+    assert (alloc.iloc[:60].to_numpy() == 0.0).all()             # nothing before warm-up
+    warm = alloc.iloc[60:]
+    assert np.allclose(warm.sum(axis=1).to_numpy(), 1.0)
+    assert (warm.to_numpy() >= 0.0).all()                        # HRP is long-only
+
+
+def test_hrp_allocations_are_causal():
+    streams = _three_streams(seed=1)
+    base = hrp_allocations(streams, lookback=60, refit_every=21)
+    tampered = {k: v.copy() for k, v in streams.items()}
+    tampered["b"].iloc[300:] *= 8                                # blow up a sleeve's tail
+    after = hrp_allocations(tampered, lookback=60, refit_every=21)
+    pd.testing.assert_frame_equal(base.iloc[:300], after.iloc[:300])
+
+
+def test_hrp_allocations_blend_is_a_valid_return_stream():
+    streams = _three_streams(seed=2)
+    alloc = hrp_allocations(streams, lookback=60, refit_every=21)
+    blended = blend_returns(streams, allocations=alloc)
+    assert len(blended) == len(next(iter(streams.values())))
+    assert blended.iloc[:60].abs().sum() == 0.0                  # no allocation, no P&L
 
 
 def test_combine_weights_is_allocation_weighted_sum():

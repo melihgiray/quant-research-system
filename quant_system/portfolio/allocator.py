@@ -16,6 +16,7 @@ import numpy as np
 import pandas as pd
 
 from ..config import TRADING_DAYS_PER_YEAR
+from .hrp import hrp_weights
 
 
 def combine_weights(weights_by_sleeve: Dict[str, pd.DataFrame],
@@ -95,6 +96,39 @@ def inverse_vol_allocations(sleeve_returns: Dict[str, pd.Series],
     inv = 1.0 / vol.where(vol > 0)                      # NaN where vol missing/zero
     alloc = inv.div(inv.sum(axis=1), axis=0)            # normalise over available sleeves
     return alloc.fillna(0.0)
+
+
+def hrp_allocations(sleeve_returns: Dict[str, pd.Series],
+                    lookback: int = TRADING_DAYS_PER_YEAR,
+                    refit_every: int = 21,
+                    min_obs: Optional[int] = None) -> pd.DataFrame:
+    """Daily capital allocation across sleeves by Hierarchical Risk Parity.
+
+    Where ``inverse_vol_allocations`` ignores how the sleeves co-move, HRP
+    clusters them on their correlation and splits the risk budget down that tree,
+    so two sleeves that move together share a budget instead of each taking a full
+    inverse-variance share. The allocation is recomputed on the trailing
+    ``lookback`` window every ``refit_every`` days and held between refits; every
+    row is fit on returns strictly before its day, so it is causal. Rows before
+    ``min_obs`` (defaults to ``lookback``) are zero.
+    """
+    frame = _sleeve_frame(sleeve_returns)
+    min_obs = min_obs or lookback
+    alloc = pd.DataFrame(0.0, index=frame.index, columns=frame.columns)
+    last = None
+    for pos in range(len(frame)):
+        if pos < min_obs:
+            continue
+        if (pos - min_obs) % refit_every == 0:
+            window = frame.iloc[max(0, pos - lookback):pos].dropna()   # data strictly before pos
+            if window.shape[0] >= 20 and window.shape[1] == frame.shape[1]:
+                try:
+                    last = hrp_weights(window)
+                except Exception:
+                    pass                                               # keep prior weights on failure
+        if last is not None:
+            alloc.iloc[pos] = last.reindex(frame.columns).fillna(0.0).to_numpy()
+    return alloc
 
 
 def blend_returns(sleeve_returns: Dict[str, pd.Series],
