@@ -20,8 +20,10 @@ case of raw SVI, so ``ssvi_to_svi_params`` maps it back and everything in
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Optional, Tuple
 
 import numpy as np
+from scipy.optimize import least_squares
 
 from .svi import SVIParams
 
@@ -74,3 +76,45 @@ def ssvi_butterfly_free(params: SSVIParams, tol: float = 0.0) -> bool:
     factor = params.theta * (1.0 + abs(params.rho))
     return bool(factor * params.psi < 4.0 + tol
                 and factor * params.psi ** 2 <= 4.0 + tol)
+
+
+def fit_ssvi_slice(k, w, weights: Optional[np.ndarray] = None,
+                   penalty_weight: float = 1e4,
+                   margin: float = 1e-3,
+                   max_nfev: int = 8000) -> Tuple[SSVIParams, float]:
+    """Calibrate an SSVI slice, kept inside the no-arbitrage region.
+
+    Fits ``theta, rho, psi`` by least squares with a penalty whenever the two
+    Gatheral-Jacquier quantities exceed ``4 - margin``, so the fitted slice stays
+    provably free of butterfly arbitrage. Because SSVI cannot represent an
+    arbitrageable smile, fitting it to one trades data fit for a clean surface
+    rather than reproducing the violation. Returns the parameters and the
+    data-only RMS total-variance error.
+    """
+    k = np.asarray(k, dtype=float)
+    w = np.asarray(w, dtype=float)
+    if len(k) < 5:
+        raise ValueError("need at least 5 points to fit an SSVI slice")
+
+    sw = np.ones_like(w) if weights is None else np.asarray(weights, dtype=float)
+    sqrt_w = np.sqrt(np.clip(sw, 0.0, None))
+    bound = 4.0 - margin
+
+    theta0 = float(np.interp(0.0, k, w)) if k.min() <= 0 <= k.max() else float(w.min())
+    x0 = [max(theta0, 1e-4), -0.3, 1.0]
+    lower = [1e-8, -0.999, 1e-6]
+    upper = [np.inf, 0.999, np.inf]
+
+    def residual(x):
+        params = SSVIParams(*x)
+        data = (ssvi_total_variance(k, params) - w) * sqrt_w
+        factor = params.theta * (1.0 + abs(params.rho))
+        c1 = np.clip(factor * params.psi - bound, 0.0, None)
+        c2 = np.clip(factor * params.psi ** 2 - bound, 0.0, None)
+        penalty = np.sqrt(penalty_weight) * np.array([c1, c2])
+        return np.concatenate([data, penalty])
+
+    sol = least_squares(residual, x0, bounds=(lower, upper), max_nfev=max_nfev)
+    params = SSVIParams(*sol.x)
+    rmse = float(np.sqrt(np.mean((ssvi_total_variance(k, params) - w) ** 2)))
+    return params, rmse
