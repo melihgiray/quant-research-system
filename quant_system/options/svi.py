@@ -43,6 +43,19 @@ def svi_total_variance(k, params: SVIParams):
                                   + np.sqrt(centred ** 2 + params.sigma ** 2))
 
 
+def svi_implied_vol(k, params: SVIParams, time_to_expiry: float):
+    """Black-Scholes implied vol implied by an SVI slice at time_to_expiry.
+
+    SVI models total variance ``w = iv^2 * T``; this converts back to a vol so a
+    fitted slice can be plotted against quoted implied vols. ``time_to_expiry``
+    must be positive.
+    """
+    if time_to_expiry <= 0:
+        raise ValueError("time_to_expiry must be positive")
+    w = np.maximum(svi_total_variance(k, params), 0.0)
+    return np.sqrt(w / time_to_expiry)
+
+
 def fit_svi_slice(k, w, weights: Optional[np.ndarray] = None,
                   max_nfev: int = 5000) -> Tuple[SVIParams, float]:
     """Calibrate the five raw-SVI parameters to one expiry's (k, w) points.

@@ -12,6 +12,7 @@ from quant_system.options.svi import (
     fit_svi_slice,
     is_butterfly_arbitrage_free,
     svi_derivatives,
+    svi_implied_vol,
     svi_total_variance,
 )
 
@@ -45,6 +46,20 @@ def test_vectorises_over_k():
     out = svi_total_variance(np.linspace(-1, 1, 11), p)
     assert out.shape == (11,)
     assert (out > 0).all()
+
+
+def test_implied_vol_inverts_total_variance():
+    p = _params()
+    k = np.linspace(-0.4, 0.4, 9)
+    T = 0.25
+    iv = svi_implied_vol(k, p, T)
+    assert np.allclose(iv ** 2 * T, svi_total_variance(k, p))
+    assert (iv > 0).all()
+
+
+def test_implied_vol_rejects_nonpositive_maturity():
+    with pytest.raises(ValueError, match="must be positive"):
+        svi_implied_vol(0.0, _params(), 0.0)
 
 
 def test_fit_recovers_a_known_smile():
