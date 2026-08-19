@@ -235,8 +235,10 @@ are flagged as not arbitrage-free: they reproduce butterfly violations that are
 already in the raw quotes (wide markets, stale prints), and g(k) catches it. The
 longer-dated smiles fit cleanly and pass. The lesson is that a visually perfect
 fit can still be arbitrageable, which is the whole reason to check rather than
-assume, and it is why a genuinely arbitrage-free calibration would constrain the
-fit to keep g >= 0 (left as future work).
+assume. Passing `--arb-free` (or `fit_svi_points(..., arbitrage_free=True)`)
+switches to a penalised fit that trades a little RMSE to keep g(k) positive, so
+the short-dated slices come back arbitrage-free; it is a strong soft constraint,
+not a certificate of positivity, and that distinction is stated in the code.
 
 ![SPY vol surface](docs/results/vol_surface_spy.png)
 

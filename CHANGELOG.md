@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.23.0 - arbitrage-free SVI calibration
+
+- `options/svi.py` gains `fit_svi_slice_no_arb`, an SVI calibration that adds a
+  penalty on Gatheral's g(k) falling below a small positive margin over a padded
+  grid, so the optimiser trades a little data fit for a slice whose implied
+  density stays positive. On a smile generated from arbitrageable parameters the
+  unconstrained fit reproduces the violation (min g -5.9) while the penalised fit
+  is clean (min g +0.001) at the cost of RMSE; on an already-clean smile it pays
+  no penalty. It is a strong soft constraint, not a certificate of positivity,
+  and the docstring says so.
+- `fit_svi_points` and `fit_svi_surface` take an `arbitrage_free` flag, and
+  `scripts/build_svi_fit.py` takes `--arb-free`, so the whole-surface fit and the
+  figure can be produced with the butterfly penalty on.
+- This directly answers the "future work" left by 0.22: the short-dated SPY
+  slices that came back arbitrageable under the plain fit can now be fit
+  arbitrage-free.
+- 4 new tests (279 total).
+
 ## 0.22.0 - SVI fit against a live market smile
 
 - `options/svi.py` gains `svi_implied_vol`, converting a fitted slice's total
