@@ -168,15 +168,17 @@ def is_butterfly_arbitrage_free(params: SVIParams, k_grid=None,
 
 
 def fit_svi_points(points: pd.DataFrame, weight_by_spread: bool = True,
-                   min_points: int = 5) -> pd.DataFrame:
+                   min_points: int = 5, arbitrage_free: bool = False) -> pd.DataFrame:
     """Fit an SVI slice to every expiry in a surface's point table.
 
     ``points`` needs ``time_to_expiry``, ``log_moneyness`` and ``total_variance``
     columns (as produced by the surface builder); a ``spread`` column, when
     present and ``weight_by_spread`` is set, weights tighter quotes more heavily.
-    Returns one row per expiry with the fitted parameters, the RMS fit error, and
-    the butterfly no-arbitrage verdict.
+    With ``arbitrage_free`` each slice is fit with the butterfly penalty, trading
+    a little RMSE for a density that stays positive. Returns one row per expiry
+    with the fitted parameters, the RMS fit error, and the no-arbitrage verdict.
     """
+    fitter = fit_svi_slice_no_arb if arbitrage_free else fit_svi_slice
     rows = []
     for t, sel in points.groupby("time_to_expiry"):
         sel = sel.sort_values("log_moneyness")
@@ -188,7 +190,7 @@ def fit_svi_points(points: pd.DataFrame, weight_by_spread: bool = True,
         if weight_by_spread and "spread" in sel.columns:
             spread = sel["spread"].to_numpy(dtype=float)
             weights = np.where(spread > 0, 1.0 / np.where(spread > 0, spread, 1.0), 1.0)
-        params, rmse = fit_svi_slice(k, w, weights=weights)
+        params, rmse = fitter(k, w, weights=weights)
         arb_free, min_g = is_butterfly_arbitrage_free(params)
         rows.append({"time_to_expiry": float(t), "a": params.a, "b": params.b,
                      "rho": params.rho, "m": params.m, "sigma": params.sigma,
@@ -197,6 +199,6 @@ def fit_svi_points(points: pd.DataFrame, weight_by_spread: bool = True,
     return pd.DataFrame(rows)
 
 
-def fit_svi_surface(surface) -> pd.DataFrame:
+def fit_svi_surface(surface, arbitrage_free: bool = False) -> pd.DataFrame:
     """Fit SVI to each expiry of a built :class:`VolSurface` (see ``fit_svi_points``)."""
-    return fit_svi_points(surface.points)
+    return fit_svi_points(surface.points, arbitrage_free=arbitrage_free)

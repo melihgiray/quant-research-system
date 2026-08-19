@@ -174,6 +174,13 @@ def test_fit_points_returns_a_row_per_expiry():
     assert result["arb_free"].all()
 
 
+def test_fit_points_arbitrage_free_flag_cleans_a_bad_expiry():
+    k, w = _arbitrageable_smile()
+    pts = pd.DataFrame({"time_to_expiry": 0.25, "log_moneyness": k, "total_variance": w})
+    assert not fit_svi_points(pts, arbitrage_free=False)["arb_free"].iloc[0]
+    assert fit_svi_points(pts, arbitrage_free=True)["arb_free"].iloc[0]
+
+
 def test_fit_points_skips_thin_expiries():
     pts = _points_two_expiries()
     thin = pd.DataFrame({"time_to_expiry": 1.0, "log_moneyness": [0.0, 0.1, 0.2],

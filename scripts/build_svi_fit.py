@@ -46,6 +46,8 @@ def main() -> int:
     parser.add_argument("--dividend-yield", type=float, default=0.012)
     parser.add_argument("--expiries", type=int, default=7)
     parser.add_argument("--synthetic", action="store_true")
+    parser.add_argument("--arb-free", action="store_true",
+                        help="fit with the butterfly penalty (keeps g(k) >= 0)")
     args = parser.parse_args()
 
     cfg = default_config()
@@ -62,7 +64,7 @@ def main() -> int:
 
     surface = build_surface(chain, rate=args.rate,
                             dividend_yield=args.dividend_yield, cfg=cfg.options)
-    fits = fit_svi_points(surface.points)
+    fits = fit_svi_points(surface.points, arbitrage_free=args.arb_free)
     if fits.empty:
         print("[svi] no expiry had enough points to fit; nothing to plot")
         return 1
