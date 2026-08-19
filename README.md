@@ -239,6 +239,13 @@ assume. Passing `--arb-free` (or `fit_svi_points(..., arbitrage_free=True)`)
 switches to a penalised fit that trades a little RMSE to keep g(k) positive, so
 the short-dated slices come back arbitrage-free; it is a strong soft constraint,
 not a certificate of positivity, and that distinction is stated in the code.
+- For the certificate version there is **SSVI** (Gatheral and Jacquier's
+  arbitrage-free surface parameterization): a three-parameter slice whose
+  parameters carry sufficient conditions for no butterfly arbitrage, so a fit
+  kept inside that region is provably clean rather than checked after the fact.
+  SSVI is a sub-family of raw SVI, so it reuses the same evaluation, g(k) check
+  and plotting. Fitting it to an arbitrageable smile yields a clean slice at a
+  cost in fit error, because SSVI simply cannot represent the arbitrage.
 
 ![SPY vol surface](docs/results/vol_surface_spy.png)
 

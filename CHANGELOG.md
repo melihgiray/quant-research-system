@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.24.0 - SSVI arbitrage-free surface parameterization
+
+- `options/ssvi.py`: the SSVI slice (Gatheral and Jacquier 2014), a three-
+  parameter (theta, rho, psi) sub-family of raw SVI whose parameters carry
+  *sufficient* conditions for no butterfly arbitrage. `ssvi_total_variance`
+  evaluates it, `ssvi_to_svi_params` maps it to the equivalent raw SVI exactly (so
+  the g(k) check and plotting reuse), and `ssvi_butterfly_free` tests the two
+  conditions `theta*psi*(1+|rho|) < 4` and `theta*psi^2*(1+|rho|) <= 4`.
+- `fit_ssvi_slice` calibrates a slice while penalising those quantities past
+  their bound, so the fit stays inside the arbitrage-free region. Where the
+  penalised raw-SVI fit (0.23) drives g(k) toward the boundary as a soft
+  constraint, an SSVI fit that satisfies the conditions is provably clean: fitting
+  it to an arbitrageable smile returns a slice that both the conditions and the
+  independent g(k) check confirm is arbitrage-free, at a cost in RMSE.
+- The conditions are sufficient, not necessary, which the code states; the
+  calendar-arbitrage side (a monotone theta term structure) is the natural
+  extension to a full arbitrage-free surface and is left for a focused follow-up.
+- 9 new tests (288 total).
+
 ## 0.23.0 - arbitrage-free SVI calibration
 
 - `options/svi.py` gains `fit_svi_slice_no_arb`, an SVI calibration that adds a
