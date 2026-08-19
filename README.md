@@ -246,6 +246,13 @@ not a certificate of positivity, and that distinction is stated in the code.
   SSVI is a sub-family of raw SVI, so it reuses the same evaluation, g(k) check
   and plotting. Fitting it to an arbitrageable smile yields a clean slice at a
   cost in fit error, because SSVI simply cannot represent the arbitrage.
+- A full **arbitrage-free SSVI surface** fit ties the expiries together with one
+  skew and one power-law curvature and fits an at-the-money variance per
+  maturity. That term structure is built from non-negative increments, so it is
+  non-decreasing by construction (no calendar arbitrage), while the per-slice
+  butterfly conditions are enforced during the fit. The result is a surface that
+  is provably free of both butterfly and calendar arbitrage, checked
+  independently by `ssvi_surface_arbitrage_free`.
 
 ![SPY vol surface](docs/results/vol_surface_spy.png)
 

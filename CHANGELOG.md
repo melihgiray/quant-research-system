@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.25.0 - calendar-arbitrage-free SSVI surface
+
+- `options/ssvi.py` gains a full-surface fit. `SSVISurface` holds one `rho`, one
+  power-law curvature `phi(theta) = eta * theta^-gamma`, and an at-the-money
+  total variance per maturity; `ssvi_surface_slice` reads off each expiry's slice
+  and `ssvi_surface_arbitrage_free` returns the (butterfly, calendar) verdict.
+- The calendar condition is the natural one in total-variance coordinates: the
+  at-the-money variance is non-decreasing in maturity, plus the SSVI bound on
+  `d/dtheta (theta*phi)`. `fit_ssvi_surface` fits `rho, eta, gamma` and the theta
+  term structure jointly, building theta from non-negative increments so it is
+  monotone by construction, and penalising the butterfly and phi bounds, so the
+  fitted surface is provably free of both butterfly and calendar arbitrage.
+- On a surface generated from known parameters the fit recovers them to ~1e-10;
+  fed a term structure whose variance falls with maturity (a calendar arbitrage),
+  it returns a monotone, calendar-free surface at a cost in fit error rather than
+  reproducing the violation.
+- This completes the arbitrage-free surface the SSVI slice work (0.24) pointed at.
+  The conditions remain sufficient, not necessary, which the code states.
+- 7 new tests (295 total).
+
 ## 0.24.0 - SSVI arbitrage-free surface parameterization
 
 - `options/ssvi.py`: the SSVI slice (Gatheral and Jacquier 2014), a three-
