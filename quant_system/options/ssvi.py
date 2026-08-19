@@ -56,3 +56,21 @@ def ssvi_to_svi_params(params: SSVIParams) -> SVIParams:
         m=-rho / psi,
         sigma=np.sqrt(1.0 - rho ** 2) / psi,
     )
+
+
+def ssvi_butterfly_free(params: SSVIParams, tol: float = 0.0) -> bool:
+    """Whether a slice meets SSVI's sufficient conditions for no butterfly arbitrage.
+
+    From Gatheral and Jacquier (2014): the slice is free of butterfly arbitrage if
+
+        theta * psi * (1 + |rho|) < 4      and      theta * psi^2 * (1 + |rho|) <= 4.
+
+    These are sufficient, not necessary, so a slice that fails them is not
+    guaranteed to be arbitrageable, only not guaranteed clean. ``theta`` and
+    ``psi`` must be positive for SSVI to be well defined.
+    """
+    if params.theta <= 0 or params.psi <= 0 or not -1.0 < params.rho < 1.0:
+        return False
+    factor = params.theta * (1.0 + abs(params.rho))
+    return bool(factor * params.psi < 4.0 + tol
+                and factor * params.psi ** 2 <= 4.0 + tol)
