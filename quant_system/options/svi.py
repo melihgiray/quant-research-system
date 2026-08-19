@@ -89,6 +89,48 @@ def fit_svi_slice(k, w, weights: Optional[np.ndarray] = None,
     return params, rmse
 
 
+def fit_svi_slice_no_arb(k, w, weights: Optional[np.ndarray] = None,
+                         penalty_weight: float = 1e4,
+                         margin: float = 1e-3,
+                         grid_pad: float = 0.5,
+                         max_nfev: int = 8000) -> Tuple[SVIParams, float]:
+    """Calibrate SVI while penalising butterfly arbitrage in the fitted slice.
+
+    The unconstrained fit reproduces whatever butterfly violations sit in the raw
+    quotes. This augments the least-squares residual with a penalty on Gatheral's
+    g(k) falling below ``margin`` (a small positive cushion) over a padded grid,
+    so the optimiser trades a little data fit for a slice whose implied density
+    stays positive. A larger ``penalty_weight`` pushes harder toward
+    no-arbitrage at the cost of RMSE. The method drives g toward the boundary
+    rather than proving positivity, so it is a strong soft constraint, not a
+    certificate. Returns the fitted parameters and the data-only RMS error.
+    """
+    k = np.asarray(k, dtype=float)
+    w = np.asarray(w, dtype=float)
+    if len(k) < 5:
+        raise ValueError("need at least 5 points to fit five SVI parameters")
+
+    sw = np.ones_like(w) if weights is None else np.asarray(weights, dtype=float)
+    sqrt_w = np.sqrt(np.clip(sw, 0.0, None))
+    grid = np.linspace(k.min() - grid_pad, k.max() + grid_pad, 200)
+
+    x0 = [max(float(w.min()), 1e-6), 0.1, -0.3, float(k[np.argmin(w)]), 0.1]
+    lower = [-np.inf, 0.0, -0.999, -np.inf, 1e-6]
+    upper = [np.inf, np.inf, 0.999, np.inf, np.inf]
+
+    def residual(x):
+        params = SVIParams(*x)
+        data = (svi_total_variance(k, params) - w) * sqrt_w
+        g = durability_g(grid, params)
+        penalty = np.sqrt(penalty_weight) * np.clip(margin - g, 0.0, None)  # 0 where g >= margin
+        return np.concatenate([data, penalty])
+
+    sol = least_squares(residual, x0, bounds=(lower, upper), max_nfev=max_nfev)
+    params = SVIParams(*sol.x)
+    rmse = float(np.sqrt(np.mean((svi_total_variance(k, params) - w) ** 2)))
+    return params, rmse
+
+
 def svi_derivatives(k, params: SVIParams):
     """Return (w, w', w'') of raw SVI at ``k`` analytically."""
     k = np.asarray(k, dtype=float)

@@ -10,6 +10,7 @@ from quant_system.options.svi import (
     durability_g,
     fit_svi_points,
     fit_svi_slice,
+    fit_svi_slice_no_arb,
     is_butterfly_arbitrage_free,
     svi_derivatives,
     svi_implied_vol,
@@ -120,6 +121,35 @@ def test_pathological_slice_has_butterfly_arbitrage():
     assert not ok
     assert min_g < 0
     assert (durability_g(np.linspace(-2, 2, 401), bad) < 0).any()
+
+
+def _arbitrageable_smile():
+    bad = SVIParams(a=0.01, b=0.9, rho=-0.95, m=0.0, sigma=0.02)
+    k = np.linspace(-0.4, 0.4, 25)
+    return k, svi_total_variance(k, bad)
+
+
+def test_no_arb_fit_removes_a_butterfly_violation():
+    k, w = _arbitrageable_smile()
+    plain, rmse_plain = fit_svi_slice(k, w)
+    safe, rmse_safe = fit_svi_slice_no_arb(k, w)
+    assert not is_butterfly_arbitrage_free(plain)[0]     # unconstrained reproduces the arb
+    assert is_butterfly_arbitrage_free(safe)[0]          # constrained fit is clean
+    assert rmse_safe > rmse_plain                        # it trades data fit for no-arbitrage
+
+
+def test_no_arb_fit_leaves_a_clean_smile_alone():
+    p = _params()                                        # already arbitrage-free
+    k = np.linspace(-0.5, 0.5, 21)
+    w = svi_total_variance(k, p)
+    safe, rmse = fit_svi_slice_no_arb(k, w)
+    assert is_butterfly_arbitrage_free(safe)[0]
+    assert rmse < 1e-4                                    # no penalty is paid when none is needed
+
+
+def test_no_arb_fit_needs_enough_points():
+    with pytest.raises(ValueError, match="at least 5 points"):
+        fit_svi_slice_no_arb(np.array([0.0, 0.1]), np.array([0.04, 0.03]))
 
 
 def _points_two_expiries():
