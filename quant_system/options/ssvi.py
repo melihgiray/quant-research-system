@@ -23,6 +23,7 @@ from dataclasses import dataclass
 from typing import Optional, Tuple
 
 import numpy as np
+import pandas as pd
 from scipy.optimize import least_squares
 
 from .svi import SVIParams
@@ -172,3 +173,84 @@ def ssvi_surface_arbitrage_free(surface: SSVISurface, tol: float = 1e-6) -> Tupl
         upper_ok = bool(np.all(dtheta_phi <= upper + tol))
     calendar = monotone and lower_ok and upper_ok
     return butterfly, calendar
+
+
+def _thetas_from_increments(x_theta) -> np.ndarray:
+    """Build a non-decreasing theta vector from a base level and non-negative steps."""
+    base = x_theta[0]
+    increments = np.asarray(x_theta[1:], dtype=float)
+    return base + np.concatenate([[0.0], np.cumsum(increments)])
+
+
+def fit_ssvi_surface(points: pd.DataFrame, weight_by_spread: bool = True,
+                     min_points_per_expiry: int = 5, penalty_weight: float = 1e4,
+                     margin: float = 1e-3, max_nfev: int = 20000):
+    """Fit one arbitrage-free SSVI surface jointly across all expiries.
+
+    Fits a single skew ``rho`` and power-law curvature ``phi(theta) = eta *
+    theta^-gamma``, plus one at-the-money total variance per maturity. The theta
+    term structure is built from non-negative increments, so it is non-decreasing
+    by construction (no calendar arbitrage), and the butterfly conditions and the
+    phi upper bound are penalised, so the whole fitted surface is arbitrage-free.
+
+    Returns ``(SSVISurface, diagnostics)`` where diagnostics is a per-expiry table
+    of theta, psi, RMS fit error and point count. Needs at least two expiries with
+    enough points.
+    """
+    groups = []
+    for t, sel in points.groupby("time_to_expiry"):
+        sel = sel.sort_values("log_moneyness")
+        if len(sel) < min_points_per_expiry:
+            continue
+        k = sel["log_moneyness"].to_numpy(dtype=float)
+        w = sel["total_variance"].to_numpy(dtype=float)
+        weights = None
+        if weight_by_spread and "spread" in sel.columns:
+            spread = sel["spread"].to_numpy(dtype=float)
+            weights = np.where(spread > 0, 1.0 / np.where(spread > 0, spread, 1.0), 1.0)
+        groups.append((float(t), k, w, weights))
+    if len(groups) < 2:
+        raise ValueError("need at least two expiries with enough points to fit a surface")
+    groups.sort(key=lambda g: g[0])
+    maturities = np.array([g[0] for g in groups])
+    n = len(groups)
+
+    atm = np.array([float(np.interp(0.0, g[1], g[2])) if g[1].min() <= 0 <= g[1].max()
+                    else float(g[2].min()) for g in groups])
+    atm = np.maximum(atm, 1e-4)
+    x0 = [-0.3, 1.0, 0.5, atm[0], *np.clip(np.diff(atm), 1e-6, None)]
+    lower = [-0.999, 1e-6, 1e-3, 1e-8, *([0.0] * (n - 1))]
+    upper = [0.999, np.inf, 1.0, np.inf, *([np.inf] * (n - 1))]
+    bound = 4.0 - margin
+
+    def residual(x):
+        rho, eta, gamma = x[0], x[1], x[2]
+        thetas = _thetas_from_increments(x[3:])
+        parts = []
+        for (_, k, w, weights), theta in zip(groups, thetas):
+            psi = float(eta * theta ** (-gamma))
+            model = ssvi_total_variance(k, SSVIParams(theta, rho, psi))
+            sw = np.ones_like(w) if weights is None else np.clip(weights, 0.0, None)
+            parts.append((model - w) * np.sqrt(sw))
+            factor = theta * (1.0 + abs(rho))
+            parts.append(np.sqrt(penalty_weight) * np.array([
+                max(factor * psi - bound, 0.0), max(factor * psi ** 2 - bound, 0.0)]))
+        if rho != 0:
+            ub = (1.0 / rho ** 2) * (1.0 + np.sqrt(1.0 - rho ** 2))
+            dphi = eta * (1.0 - gamma) * thetas ** (-gamma)
+            parts.append(np.sqrt(penalty_weight) * np.clip(dphi - ub, 0.0, None))
+        return np.concatenate(parts)
+
+    sol = least_squares(residual, x0, bounds=(lower, upper), max_nfev=max_nfev)
+    rho, eta, gamma = float(sol.x[0]), float(sol.x[1]), float(sol.x[2])
+    thetas = _thetas_from_increments(sol.x[3:])
+    surface = SSVISurface(rho=rho, eta=eta, gamma=gamma,
+                          maturities=maturities, thetas=thetas)
+
+    rows = []
+    for (t, k, w, _), theta in zip(groups, thetas):
+        psi = float(eta * theta ** (-gamma))
+        model = ssvi_total_variance(k, SSVIParams(theta, rho, psi))
+        rows.append({"time_to_expiry": t, "theta": float(theta), "psi": psi,
+                     "rmse": float(np.sqrt(np.mean((model - w) ** 2))), "n_points": len(k)})
+    return surface, pd.DataFrame(rows)

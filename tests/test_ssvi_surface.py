@@ -1,14 +1,28 @@
 """Tests for the calendar-arbitrage-free SSVI surface."""
 
 import numpy as np
+import pandas as pd
 import pytest
 
 from quant_system.options.ssvi import (
     SSVISurface,
+    fit_ssvi_surface,
     ssvi_butterfly_free,
     ssvi_surface_arbitrage_free,
     ssvi_surface_slice,
+    ssvi_total_variance,
 )
+
+
+def _points_from_surface(surface, k=None):
+    k = np.linspace(-0.5, 0.5, 15) if k is None else k
+    rows = []
+    for i, t in enumerate(surface.maturities):
+        w = ssvi_total_variance(k, ssvi_surface_slice(surface, i))
+        for kk, ww in zip(k, w):
+            rows.append({"time_to_expiry": float(t), "log_moneyness": float(kk),
+                         "total_variance": float(ww)})
+    return pd.DataFrame(rows)
 
 
 def _good_surface():
@@ -46,3 +60,38 @@ def test_excessive_curvature_breaks_the_butterfly_condition():
                       thetas=s.thetas)                     # huge eta -> steep slices
     butterfly, _ = ssvi_surface_arbitrage_free(bad)
     assert not butterfly
+
+
+def test_surface_fit_recovers_a_known_arbitrage_free_surface():
+    true = _good_surface()
+    surface, diag = fit_ssvi_surface(_points_from_surface(true))
+    assert diag["rmse"].max() < 1e-6
+    assert surface.rho == pytest.approx(true.rho, abs=1e-2)
+    assert np.allclose(surface.thetas, true.thetas, atol=1e-3)
+    assert ssvi_surface_arbitrage_free(surface) == (True, True)
+
+
+def test_surface_fit_forces_a_monotone_theta_when_data_has_calendar_arbitrage():
+    # Feed a term structure whose at-the-money variance falls with maturity: the
+    # fit cannot honour it (theta is monotone by construction) and returns a
+    # calendar-free surface at a cost in fit error.
+    rows = []
+    k = np.linspace(-0.4, 0.4, 12)
+    for t, theta in ((0.1, 0.06), (0.5, 0.02)):            # variance DROPS with maturity
+        slice_surface = SSVISurface(rho=-0.2, eta=0.5, gamma=0.5,
+                                    maturities=np.array([t]), thetas=np.array([theta]))
+        w = ssvi_total_variance(k, ssvi_surface_slice(slice_surface, 0))
+        for kk, ww in zip(k, w):
+            rows.append({"time_to_expiry": t, "log_moneyness": float(kk),
+                         "total_variance": float(ww)})
+    surface, _ = fit_ssvi_surface(pd.DataFrame(rows))
+    assert np.all(np.diff(surface.thetas) >= -1e-9)        # theta non-decreasing
+    assert ssvi_surface_arbitrage_free(surface)[1]         # calendar-free by construction
+
+
+def test_surface_fit_needs_two_expiries():
+    s = _good_surface()
+    one = _points_from_surface(SSVISurface(rho=s.rho, eta=s.eta, gamma=s.gamma,
+                                           maturities=s.maturities[:1], thetas=s.thetas[:1]))
+    with pytest.raises(ValueError, match="at least two expiries"):
+        fit_ssvi_surface(one)
