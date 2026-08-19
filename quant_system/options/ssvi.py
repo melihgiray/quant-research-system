@@ -118,3 +118,57 @@ def fit_ssvi_slice(k, w, weights: Optional[np.ndarray] = None,
     params = SSVIParams(*sol.x)
     rmse = float(np.sqrt(np.mean((ssvi_total_variance(k, params) - w) ** 2)))
     return params, rmse
+
+
+@dataclass(frozen=True)
+class SSVISurface:
+    """A full SSVI surface: one skew and one curvature law across all expiries.
+
+    A single ``rho`` and a power-law curvature ``phi(theta) = eta * theta^-gamma``
+    tie the slices together, and the at-the-money total variance ``thetas`` (one
+    per maturity, sorted) sets each slice. This shared structure is what lets the
+    surface be calendar-arbitrage-free, not just each slice butterfly-free.
+    """
+    rho: float
+    eta: float
+    gamma: float
+    maturities: np.ndarray
+    thetas: np.ndarray
+
+
+def ssvi_phi(theta, eta: float, gamma: float):
+    """Power-law SSVI curvature phi(theta) = eta * theta^-gamma."""
+    return eta * np.power(np.asarray(theta, dtype=float), -gamma)
+
+
+def ssvi_surface_slice(surface: SSVISurface, i: int) -> SSVIParams:
+    """The SSVI slice parameters for the ``i``-th maturity of a surface."""
+    theta = float(surface.thetas[i])
+    return SSVIParams(theta=theta, rho=surface.rho,
+                      psi=float(ssvi_phi(theta, surface.eta, surface.gamma)))
+
+
+def ssvi_surface_arbitrage_free(surface: SSVISurface, tol: float = 1e-6) -> Tuple[bool, bool]:
+    """Return (butterfly_free, calendar_free) for a whole SSVI surface.
+
+    Butterfly: every slice meets the per-slice conditions. Calendar (Gatheral and
+    Jacquier 2014): the at-the-money total variance is non-decreasing in maturity
+    and ``d/dtheta (theta * phi(theta))`` stays in ``[0, (1/rho^2)(1 + sqrt(1 -
+    rho^2))]``. For the power law that derivative is ``eta*(1-gamma)*theta^-gamma``,
+    so ``gamma <= 1`` gives the lower bound and small ``|rho|`` makes the upper
+    bound loose (it is vacuous at rho = 0).
+    """
+    thetas = np.asarray(surface.thetas, dtype=float)
+    butterfly = all(ssvi_butterfly_free(ssvi_surface_slice(surface, i))
+                    for i in range(len(thetas)))
+
+    monotone = bool(np.all(np.diff(thetas) >= -tol))
+    dtheta_phi = surface.eta * (1.0 - surface.gamma) * np.power(thetas, -surface.gamma)
+    lower_ok = bool(np.all(dtheta_phi >= -tol))
+    if surface.rho == 0:
+        upper_ok = True
+    else:
+        upper = (1.0 / surface.rho ** 2) * (1.0 + np.sqrt(1.0 - surface.rho ** 2))
+        upper_ok = bool(np.all(dtheta_phi <= upper + tol))
+    calendar = monotone and lower_ok and upper_ok
+    return butterfly, calendar
