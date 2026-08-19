@@ -227,6 +227,17 @@ built from live chains, and strategy backtests.
   fitted slice is checked for butterfly arbitrage via Gatheral's g(k) density
   condition rather than assumed clean.
 
+![SVI fit vs market smile](docs/results/svi_fit_spy.png)
+
+SVI fit against a live SPY chain (`python scripts/build_svi_fit.py`). The fit
+tracks the market smiles to a fraction of a vol point, but the short-dated slices
+are flagged as not arbitrage-free: they reproduce butterfly violations that are
+already in the raw quotes (wide markets, stale prints), and g(k) catches it. The
+longer-dated smiles fit cleanly and pass. The lesson is that a visually perfect
+fit can still be arbitrageable, which is the whole reason to check rather than
+assume, and it is why a genuinely arbitrage-free calibration would constrain the
+fit to keep g >= 0 (left as future work).
+
 ![SPY vol surface](docs/results/vol_surface_spy.png)
 
 Built from a live SPY chain with `python scripts/build_vol_surface.py`. Two

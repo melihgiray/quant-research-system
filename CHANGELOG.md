@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.22.0 - SVI fit against a live market smile
+
+- `options/svi.py` gains `svi_implied_vol`, converting a fitted slice's total
+  variance back to a Black-Scholes vol so it can be plotted against quoted vols.
+- `scripts/build_svi_fit.py` fits SVI to a real surface (a live chain by default,
+  synthetic with a flag) and overlays the fits on the market smiles, annotated
+  with the RMS error and the butterfly no-arbitrage verdict per expiry.
+- The live SPY figure (`docs/results/svi_fit_spy.png`) shows the honest picture:
+  SVI tracks the smiles to a fraction of a vol point, but the short-dated slices
+  are flagged not arbitrage-free because they reproduce butterfly violations
+  already present in the raw quotes, while the longer expiries fit cleanly. A
+  visually perfect fit can still be arbitrageable, which is why g(k) is checked
+  rather than assumed; a genuinely arbitrage-free calibration (constraining the
+  fit to keep g >= 0) is noted as future work.
+- 2 new tests (275 total).
+
 ## 0.21.0 - HRP allocation across strategy sleeves
 
 - `portfolio/allocator.py` gains `hrp_allocations`: a causal rolling
