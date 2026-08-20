@@ -252,7 +252,21 @@ not a certificate of positivity, and that distinction is stated in the code.
   non-decreasing by construction (no calendar arbitrage), while the per-slice
   butterfly conditions are enforced during the fit. The result is a surface that
   is provably free of both butterfly and calendar arbitrage, checked
-  independently by `ssvi_surface_arbitrage_free`.
+  independently by `ssvi_surface_arbitrage_free` (the sufficient parameter
+  conditions) and by `ssvi_surface_calendar_free` (the direct pointwise
+  definition, total variance non-decreasing in maturity at every strike).
+
+![Arbitrage-free SSVI surface](docs/results/ssvi_surface_spy.png)
+
+Fit against a live SPY chain (`python scripts/build_ssvi_surface.py`). Two honest
+notes. First, the single arbitrage-free surface fits looser than the per-expiry
+raw-SVI overlay above: that is the price of global consistency, one skew and one
+curvature law cannot bend to each smile the way six independent slices can, and
+it buys a surface with no arbitrage anywhere. Second, on this chain the sufficient
+calendar condition reports False while the direct pointwise check reports True:
+the surface is genuinely calendar-arbitrage-free, but the steep front-month
+curvature sits right on the sufficient bound, a clean demonstration that those
+conditions are sufficient and not necessary, which is why both checks exist.
 
 ![SPY vol surface](docs/results/vol_surface_spy.png)
 

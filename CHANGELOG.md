@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.26.0 - SSVI surface fit against a live chain
+
+- `options/ssvi.py` gains `ssvi_surface_calendar_free`, the direct calendar
+  check: total variance non-decreasing in maturity at every log-moneyness. Unlike
+  the sufficient parameter conditions in `ssvi_surface_arbitrage_free`, this is
+  the definition, so it can certify a surface the sufficient bound fails to.
+- `scripts/build_ssvi_surface.py` fits one arbitrage-free SSVI surface to a real
+  chain (live by default, synthetic with a flag) and overlays it per expiry,
+  reporting both the sufficient-condition and the direct pointwise verdicts.
+- The live SPY figure (`docs/results/ssvi_surface_spy.png`) shows two honest
+  things: the single arbitrage-free surface fits looser than the per-expiry raw
+  SVI, which is the cost of one skew and one curvature law spanning the whole
+  surface; and the sufficient calendar condition reads False while the direct
+  check reads True, because the steep front-month curvature sits on the sufficient
+  bound, a concrete case of the conditions being sufficient and not necessary.
+- 3 new tests (298 total).
+
 ## 0.25.0 - calendar-arbitrage-free SSVI surface
 
 - `options/ssvi.py` gains a full-surface fit. `SSVISurface` holds one `rho`, one
