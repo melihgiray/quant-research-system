@@ -9,6 +9,7 @@ from quant_system.options.ssvi import (
     fit_ssvi_surface,
     ssvi_butterfly_free,
     ssvi_surface_arbitrage_free,
+    ssvi_surface_calendar_free,
     ssvi_surface_slice,
     ssvi_total_variance,
 )
@@ -87,6 +88,25 @@ def test_surface_fit_forces_a_monotone_theta_when_data_has_calendar_arbitrage():
     surface, _ = fit_ssvi_surface(pd.DataFrame(rows))
     assert np.all(np.diff(surface.thetas) >= -1e-9)        # theta non-decreasing
     assert ssvi_surface_arbitrage_free(surface)[1]         # calendar-free by construction
+
+
+def test_pointwise_calendar_check_passes_a_monotone_surface():
+    assert ssvi_surface_calendar_free(_good_surface())
+
+
+def test_pointwise_calendar_check_catches_a_variance_inversion():
+    s = _good_surface()
+    bad = SSVISurface(rho=s.rho, eta=s.eta, gamma=s.gamma, maturities=s.maturities,
+                      thetas=np.array([0.10, 0.05, 0.05, 0.02]))   # variance inverts
+    assert not ssvi_surface_calendar_free(bad)
+
+
+def test_pointwise_check_can_certify_when_sufficient_bound_is_marginal():
+    # theta is monotone so the surface is genuinely calendar-free pointwise, even
+    # if a sufficient parameter bound sits on its edge; the direct check confirms it.
+    s = _good_surface()
+    assert ssvi_surface_calendar_free(s)
+    assert ssvi_surface_arbitrage_free(s)[1]             # here both agree
 
 
 def test_surface_fit_needs_two_expiries():

@@ -175,6 +175,24 @@ def ssvi_surface_arbitrage_free(surface: SSVISurface, tol: float = 1e-6) -> Tupl
     return butterfly, calendar
 
 
+def ssvi_surface_calendar_free(surface: SSVISurface, k_grid=None, tol: float = 1e-9) -> bool:
+    """Direct calendar-arbitrage check: total variance non-decreasing in maturity
+    at every log-moneyness on the grid.
+
+    This is the definition of no calendar arbitrage, evaluated pointwise, so it is
+    independent of the SSVI sufficient conditions in ``ssvi_surface_arbitrage_free``.
+    Because those conditions are sufficient and not necessary, this can certify a
+    surface the sufficient bound fails to, which is exactly what happens on steep
+    front-month equity smiles.
+    """
+    if k_grid is None:
+        k_grid = np.linspace(-1.0, 1.0, 101)
+    order = np.argsort(np.asarray(surface.maturities, dtype=float))
+    total_var = np.vstack([ssvi_total_variance(k_grid, ssvi_surface_slice(surface, int(i)))
+                           for i in order])
+    return bool(np.all(np.diff(total_var, axis=0) >= -tol))
+
+
 def _thetas_from_increments(x_theta) -> np.ndarray:
     """Build a non-decreasing theta vector from a base level and non-negative steps."""
     base = x_theta[0]
