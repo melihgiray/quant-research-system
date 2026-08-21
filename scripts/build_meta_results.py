@@ -20,6 +20,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from quant_system.config import default_config
 from quant_system.data.loader import load_price_data
 from quant_system.data.universe import universe, FACTOR_ETFS, PAIRS_CANDIDATES
+from quant_system.research import research_universe
 from quant_system.backtest.walk_forward import walk_forward
 from quant_system.regime.detector import detect_regime
 from quant_system.regime.switcher import apply_regime_sizing
@@ -30,11 +31,7 @@ from quant_system.performance.analytics import compute_metrics
 
 def main() -> int:
     cfg = default_config()
-    tickers = sorted(set(
-        universe("all")
-        + list(dict.fromkeys(FACTOR_ETFS.values()))
-        + [t for pair in PAIRS_CANDIDATES for t in pair]
-    ))
+    tickers = research_universe()
     print(f"[meta] loading {len(tickers)} tickers {cfg.start}..{cfg.end} (real data)")
     pdat = load_price_data(tickers, cfg.start, cfg.end, cache_dir=cfg.cache_dir,
                            allow_synthetic_fallback=False)

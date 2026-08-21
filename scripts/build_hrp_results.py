@@ -34,6 +34,7 @@ import pandas as pd
 from quant_system.config import default_config
 from quant_system.data.loader import load_price_data
 from quant_system.data.universe import universe, FACTOR_ETFS, PAIRS_CANDIDATES
+from quant_system.research import research_universe
 from quant_system.performance.analytics import compute_metrics
 from quant_system.portfolio import hrp_weights, inverse_variance_weights
 
@@ -64,11 +65,7 @@ def _rolling_allocation(rets: pd.DataFrame, weigh):
 
 def main() -> int:
     cfg = default_config()
-    tickers = sorted(set(
-        universe("all")
-        + list(dict.fromkeys(FACTOR_ETFS.values()))
-        + [t for pair in PAIRS_CANDIDATES for t in pair]
-    ))
+    tickers = research_universe()
     print(f"[hrp] loading {len(tickers)} tickers {cfg.start}..{cfg.end} (real data)")
     pdat = load_price_data(tickers, cfg.start, cfg.end, cache_dir=cfg.cache_dir,
                            allow_synthetic_fallback=False)
