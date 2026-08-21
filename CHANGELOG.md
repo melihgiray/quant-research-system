@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.27.0 - shared research helpers (refactor)
+
+- `quant_system/research.py` holds the setup the result scripts all repeated: the
+  standard ticker `research_universe`, and `sleeve_makers`, which returns the
+  three canonical sleeves (momentum, pairs, ML) as walk-forward weight callbacks
+  with optional regime sizing. The seven `build_*_results.py` scripts now import
+  these instead of each carrying their own copy, so "the three sleeves" is defined
+  in one place.
+- Behaviour is unchanged: the extracted closures are verbatim, `sleeve_makers` is
+  tested on synthetic data (each sleeve returns weights on the panel index, and
+  the defensive-regime scaling halves the directional books), and rerunning the
+  blend script reproduced its README numbers within the usual yfinance drift.
+- Imports left unused by the migration were removed from the scripts.
+- 4 new tests (302 total).
+
 ## 0.26.0 - SSVI surface fit against a live chain
 
 - `options/ssvi.py` gains `ssvi_surface_calendar_free`, the direct calendar
