@@ -33,7 +33,6 @@ import pandas as pd
 
 from quant_system.config import default_config
 from quant_system.data.loader import load_price_data
-from quant_system.data.universe import universe, FACTOR_ETFS, PAIRS_CANDIDATES
 from quant_system.research import research_universe
 from quant_system.performance.analytics import compute_metrics
 from quant_system.portfolio import hrp_weights, inverse_variance_weights

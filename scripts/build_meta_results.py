@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from quant_system.config import default_config
 from quant_system.data.loader import load_price_data
-from quant_system.data.universe import universe, FACTOR_ETFS, PAIRS_CANDIDATES
+from quant_system.data.universe import universe, FACTOR_ETFS
 from quant_system.research import research_universe
 from quant_system.backtest.walk_forward import walk_forward
 from quant_system.regime.detector import detect_regime
