@@ -27,14 +27,10 @@ import pandas as pd
 
 from quant_system.config import default_config
 from quant_system.data.loader import load_price_data
-from quant_system.data.universe import universe, FACTOR_ETFS, PAIRS_CANDIDATES
-from quant_system.research import research_universe
+from quant_system.data.universe import universe, FACTOR_ETFS
+from quant_system.research import research_universe, sleeve_makers
 from quant_system.backtest.walk_forward import walk_forward
 from quant_system.regime.detector import detect_regime
-from quant_system.regime.switcher import apply_regime_sizing
-from quant_system.signals.momentum import cross_sectional_momentum
-from quant_system.signals.mean_reversion import causal_pairs_weights
-from quant_system.signals.ml_signal import train_predict
 from quant_system.performance.analytics import compute_metrics
 from quant_system.portfolio import (
     blend_returns, hrp_allocations, inverse_vol_allocations, volatility_target,
@@ -62,22 +58,12 @@ def main() -> int:
 
     regime = detect_regime(pdat, cfg.regime, seed=cfg.random_seed,
                            benchmark=FACTOR_ETFS["market"])
-
-    def momentum_weights(pdata, fit_end):
-        w = cross_sectional_momentum(pdata, cfg.momentum)
-        return apply_regime_sizing(w, regime.causal_labels, cfg.regime.defensive_scale)
-
-    def pairs_weights(pdata, fit_end):
-        return causal_pairs_weights(pdata, fit_end, PAIRS_CANDIDATES, cfg.pairs)
-
-    def ml_weights(pdata, fit_end):
-        w = train_predict(pdata, fit_end, cfg.ml, max_weight=cfg.risk.max_weight)
-        return apply_regime_sizing(w, regime.causal_labels, cfg.regime.defensive_scale)
+    makers = sleeve_makers(cfg, regime.causal_labels)
 
     sleeves = [
-        ("momentum", pdat.subset(universe("sectors")), momentum_weights),
-        ("pairs", pdat, pairs_weights),
-        ("ml", pdat.subset(universe("largecaps")), ml_weights),
+        ("momentum", pdat.subset(universe("sectors")), makers["momentum"]),
+        ("pairs", pdat, makers["pairs"]),
+        ("ml", pdat.subset(universe("largecaps")), makers["ml"]),
     ]
     sleeve_returns = {}
     for name, panel, make in sleeves:

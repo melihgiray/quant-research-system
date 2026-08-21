@@ -26,15 +26,10 @@ import pandas as pd
 from quant_system.config import default_config
 from quant_system.data.loader import load_price_data
 from quant_system.data.universe import universe, FACTOR_ETFS, PAIRS_CANDIDATES
-from quant_system.research import research_universe
+from quant_system.research import research_universe, sleeve_makers
 from quant_system.backtest.walk_forward import walk_forward
 from quant_system.regime.detector import detect_regime
-from quant_system.regime.switcher import apply_regime_sizing
-from quant_system.signals.momentum import cross_sectional_momentum
-from quant_system.signals.mean_reversion import (
-    causal_pairs_weights, find_cointegrated_pair, pairs_signal,
-)
-from quant_system.signals.ml_signal import train_predict
+from quant_system.signals.mean_reversion import find_cointegrated_pair, pairs_signal
 from quant_system.performance.analytics import compute_metrics
 
 OUT_DIR = "docs/results"
@@ -54,12 +49,7 @@ def main() -> int:
     regime = detect_regime(pdat, cfg.regime, seed=cfg.random_seed,
                            benchmark=FACTOR_ETFS["market"])
 
-    def momentum_weights(pdata, fit_end):
-        w = cross_sectional_momentum(pdata, cfg.momentum)
-        return apply_regime_sizing(w, regime.causal_labels, cfg.regime.defensive_scale)
-
-    def pairs_weights(pdata, fit_end):
-        return causal_pairs_weights(pdata, fit_end, PAIRS_CANDIDATES, cfg.pairs)
+    makers = sleeve_makers(cfg, regime.causal_labels)
 
     def pairs_weights_full_sample(pdata, fit_end):
         # The old behaviour, kept only for the honest before/after comparison.
@@ -70,15 +60,11 @@ def main() -> int:
             return pd.DataFrame(0.0, index=pdata.close.index, columns=pdata.close.columns)
         return pairs_signal(pdata, (best[0], best[1]), cfg.pairs)
 
-    def ml_weights(pdata, fit_end):
-        w = train_predict(pdata, fit_end, cfg.ml, max_weight=cfg.risk.max_weight)
-        return apply_regime_sizing(w, regime.causal_labels, cfg.regime.defensive_scale)
-
     runs = [
-        ("Cross-sectional momentum", pdat.subset(universe("sectors")), momentum_weights),
-        ("Pairs (per-fold selection)", pdat, pairs_weights),
+        ("Cross-sectional momentum", pdat.subset(universe("sectors")), makers["momentum"]),
+        ("Pairs (per-fold selection)", pdat, makers["pairs"]),
         ("Pairs (old full-sample selection)", pdat, pairs_weights_full_sample),
-        ("ML directional", pdat.subset(universe("largecaps")), ml_weights),
+        ("ML directional", pdat.subset(universe("largecaps")), makers["ml"]),
     ]
 
     results = {}
