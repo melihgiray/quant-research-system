@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.43.0 - sample autocorrelation
+
+- `stats.py` gains `autocorrelation`: the sample autocorrelation at a lag. Near 0
+  for white noise; for an AR(1) with coefficient phi it recovers ~phi at lag 1 and
+  ~phi**2 at lag 2, as the tests check.
+- 3 new tests.
+
 ## 0.42.0 - return-sign entropy
 
 - `entropy.py`: `returns_to_bits` encodes returns as up/down symbols and
