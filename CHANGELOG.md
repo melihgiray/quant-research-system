@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.40.0 - Omega ratio
+
+- `risk/metrics.py` gains `omega_ratio`: total gains above a threshold over total
+  shortfalls below it, which uses the whole return distribution (skew and tails
+  included) rather than just mean and variance.
+- 4 new tests.
+
 ## 0.39.0 - ulcer index and pain ratio
 
 - `risk/metrics.py` gains `ulcer_index` (root-mean-square drawdown, which unlike
