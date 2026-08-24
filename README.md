@@ -211,6 +211,12 @@ Three strategies:
   filter** supplies the entries: rather than labeling every bar, it keeps only
   the ones where the cumulative move since the last event breaks a threshold, so
   the model trains on bars where something happened instead of on quiet noise.
+- **Sequential bootstrap** (Lopez de Prado). Path-based labels overlap in time, so
+  a plain bootstrap draws near-duplicates and overstates how much independent data
+  there is. This draws samples one at a time, each pick weighted by how little it
+  overlaps what has already been drawn (its average uniqueness), so the resampled
+  set is closer to independent. On two identical labels plus a disjoint one it
+  oversamples the disjoint one, as it should.
 
 There is also a single-stock **options** leg: pricing and Greeks, a vol surface
 built from live chains, and strategy backtests.

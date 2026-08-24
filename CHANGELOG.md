@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.32.0 - sequential bootstrap
+
+- `signals/sampling.py`: the sequential bootstrap (Lopez de Prado, ch. 4) for
+  overlapping labels. `indicator_matrix` marks which bars each label's window
+  spans, `average_uniqueness` averages 1/concurrency over a label's bars, and
+  `sequential_bootstrap` draws samples one at a time, weighting each pick by its
+  average uniqueness given the draws so far, so the resample overlaps less than a
+  uniform one.
+- Verified on the canonical case: two identical labels and one disjoint label give
+  uniqueness [0.5, 0.5, 1.0], and the sequential bootstrap draws the disjoint label
+  about 40% of the time against a uniform 33%.
+- 5 new tests (332 total).
+
 ## 0.31.0 - CUSUM event filter
 
 - `signals/labeling.py` gains `cusum_events`, the symmetric CUSUM filter (Lopez
