@@ -68,3 +68,17 @@ def per_year_table(returns: pd.Series,
             "days": int(len(r)),
         })
     return pd.DataFrame(rows).set_index("year")
+
+
+def rolling_sortino(returns: pd.Series,
+                    window: int = 126,
+                    periods: int = TRADING_DAYS_PER_YEAR,
+                    rf_annual: float = 0.0) -> pd.Series:
+    """Annualised Sortino over a trailing window: excess return over downside
+    deviation. Like rolling Sharpe but penalising only downside volatility, so an
+    upside-heavy stretch is not charged for its good days."""
+    excess = returns - rf_annual / periods
+    mean = excess.rolling(window).mean()
+    downside = returns.where(returns < 0, 0.0)
+    downside_dev = np.sqrt((downside ** 2).rolling(window).mean())
+    return (mean / downside_dev) * np.sqrt(periods)
