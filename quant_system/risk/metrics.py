@@ -195,6 +195,21 @@ def conditional_drawdown_at_risk(returns: pd.Series, level: float = 0.95) -> flo
     return float(tail.mean()) if tail.size else float(threshold)
 
 
+def tail_ratio(returns: pd.Series, level: float = 0.95) -> float:
+    """Size of the right tail over the left tail (e.g. 95th pct over |5th pct|).
+
+    Above 1 means the best days outsize the worst by that quantile, a crude read on
+    return asymmetry. Returns inf if the left tail is exactly zero."""
+    r = returns.dropna().to_numpy()
+    if r.size == 0:
+        return float("nan")
+    right = np.quantile(r, level)
+    left = np.quantile(r, 1.0 - level)
+    if left == 0:
+        return float("inf")
+    return float(abs(right / left))
+
+
 def max_drawdown_duration(returns: pd.Series) -> int:
     """Longest stretch (in periods) spent below a previous equity peak.
 
