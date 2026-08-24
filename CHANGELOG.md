@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.42.0 - return-sign entropy
+
+- `entropy.py`: `returns_to_bits` encodes returns as up/down symbols and
+  `plugin_entropy` estimates the Shannon entropy per symbol from the empirical word
+  distribution (Lopez de Prado, ch. 18), a model-free measure of how predictable
+  the sequence is. Fair random bits read ~1 bit/symbol; structure shows up as lower
+  entropy at longer words.
+- 5 new tests.
+
 ## 0.41.0 - Ledoit-Wolf covariance shrinkage
 
 - `risk/covariance.py`: `ledoit_wolf_shrinkage` shrinks the sample covariance
