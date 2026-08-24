@@ -207,7 +207,10 @@ Three strategies:
   position is labeled by which barrier its forward path touches first: a
   volatility-scaled profit target (+1), a stop (-1), or a holding-period limit
   (the sign of the return there). The label reflects what would actually have
-  happened to the trade, path and all, not just the endpoint.
+  happened to the trade, path and all, not just the endpoint. A **CUSUM event
+  filter** supplies the entries: rather than labeling every bar, it keeps only
+  the ones where the cumulative move since the last event breaks a threshold, so
+  the model trains on bars where something happened instead of on quiet noise.
 
 There is also a single-stock **options** leg: pricing and Greeks, a vol surface
 built from live chains, and strategy backtests.

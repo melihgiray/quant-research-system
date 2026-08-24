@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.31.0 - CUSUM event filter
+
+- `signals/labeling.py` gains `cusum_events`, the symmetric CUSUM filter (Lopez
+  de Prado, ch. 2). Running positive and negative sums accumulate the bar-to-bar
+  moves and reset whenever one crosses a threshold, so the returned positions are
+  the bars where the cumulative move broke that threshold, up or down. Passing log
+  prices makes the threshold a cumulative-return level.
+- This is the event sampler that feeds `triple_barrier_labels`: instead of
+  labeling every bar, label the ones where something happened. A test runs the
+  full pipeline (CUSUM events -> barrier labels) end to end.
+- 6 new tests (327 total).
+
 ## 0.30.0 - triple-barrier labeling
 
 - `signals/labeling.py`: triple-barrier labels (Lopez de Prado). Each event is
