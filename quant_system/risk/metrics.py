@@ -166,6 +166,21 @@ def pain_ratio(returns: pd.Series, periods: int = 252) -> float:
     return float(annualised / ui)
 
 
+def omega_ratio(returns: pd.Series, threshold: float = 0.0) -> float:
+    """Omega: total gains above ``threshold`` over total losses below it.
+
+    Uses the whole return distribution rather than just its first two moments, so
+    skew and fat tails count. Omega is 1 when gains and shortfalls balance at the
+    threshold, above 1 when the upside dominates. Returns inf if there are no
+    shortfalls below the threshold."""
+    excess = returns.dropna().to_numpy() - threshold
+    gains = excess[excess > 0].sum()
+    losses = -excess[excess < 0].sum()
+    if losses == 0:
+        return float("inf")
+    return float(gains / losses)
+
+
 def max_drawdown_duration(returns: pd.Series) -> int:
     """Longest stretch (in periods) spent below a previous equity peak.
 
