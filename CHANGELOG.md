@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.51.0 - combinatorial purged cross-validation
+
+- `signals/combinatorial_cv.py`: `combinatorial_purged_splits` partitions the data
+  into N contiguous groups and tests every choice of k of them (Lopez de Prado, ch.
+  12), yielding C(N, k) train/test splits with an embargo dropping neighbouring
+  training samples around each test group, so many backtest paths come from one
+  dataset without boundary leakage.
+- 5 new tests.
+
 ## 0.50.0 - rolling Sortino
 
 - `performance/rolling.py` gains `rolling_sortino`: a trailing annualised Sortino
