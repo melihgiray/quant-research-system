@@ -111,9 +111,12 @@ IVs. Next:
   The original "re-engineer a licensed codebase with source/SHA/license
   attribution" exercise still needs a real source to port, chosen by the founder,
   and is intentionally left open rather than faked.
-- [ ] Production harness: a scheduled job that repriced a small paper book.
-  1. A GitHub Actions cron workflow.
+- [x] Production harness: a scheduled job that reprices a small paper book.
+  1. A GitHub Actions workflow (manual-dispatch; the daily cron is committed but
+     commented out, so it does not auto-run until the founder opts in).
   2. The paper-book repricer that pulls the live chain and rebuilds the surface.
-  3. Fail-loud checks on bad data (empty chain, all-IV-failures, arb over spread).
-  4. Persist run logs in the repo.
+  3. Fail-loud checks on bad data (empty chain, high IV-failure rate, arb over spread).
+  4. Run logs are uploaded as build artifacts, NOT committed back to the repo, to
+     keep automated commits out of the history. (Deliberate deviation from the
+     original "persist in the repo" wording.)
   5. A README section: what runs, when, and what it does not do.

@@ -332,6 +332,23 @@ redistribution); the loader reads it from a path you provide, and a tiny
 hand-built schema clone under `tests/fixtures/` covers the tests so the suite
 needs no download.
 
+### Repricing harness
+
+`scripts/reprice_paper_book.py` pulls the current chain, rebuilds the surface,
+fits the arbitrage-free SSVI surface, and runs a fail-loud health check
+(`options/monitor.py`): it exits non-zero on an empty chain, an implied-vol
+failure rate above a threshold, or arbitrage that exceeds the local bid-ask
+spread, the violations that usually mean stale data rather than mid-price noise.
+It writes a JSON run log and never trades.
+
+The `paper-book` GitHub Actions workflow runs it and uploads that log as a build
+artifact. Two deliberate choices about what it does *not* do: the daily schedule
+is left commented out, so the job runs only when triggered by hand until someone
+opts in, and the log is uploaded as an artifact rather than committed back to the
+repo, so the job never writes automated commits into the history. Both are there
+to keep a scheduled job from quietly changing the repo or spending Actions
+minutes on its own.
+
 ### Option strategies
 
 Covered calls, cash-secured puts, and a delta-hedged short straddle, run

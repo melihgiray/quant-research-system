@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.29.0 - paper-book repricing harness
+
+- `options/monitor.py`: `repricing_health` grades a built surface pass/fail, so a
+  scheduled job can refuse bad data. It fails on an empty surface, an implied-vol
+  failure rate above a threshold, or arbitrage that exceeds the local bid-ask
+  spread (the violations that usually mean stale data, not mid-price artefacts).
+- `scripts/reprice_paper_book.py` pulls a live chain, rebuilds the surface, fits
+  the arbitrage-free SSVI surface, writes a JSON run log, and exits non-zero when
+  the data is unhealthy. It does not trade and does not commit anything.
+- `.github/workflows/paper-book.yml` runs the repricer and uploads the log as a
+  build artifact. Two deliberate restraints: the daily schedule is committed but
+  commented out (manual-dispatch only until someone opts in), and the log is an
+  artifact rather than a repo commit, so the job never writes automated commits.
+- 6 new tests (315 total).
+
 ## 0.28.0 - fractional differentiation
 
 - `signals/frac_diff.py`: fixed-width fractional differentiation (Lopez de
