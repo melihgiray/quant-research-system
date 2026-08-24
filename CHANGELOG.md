@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.50.0 - rolling Sortino
+
+- `performance/rolling.py` gains `rolling_sortino`: a trailing annualised Sortino
+  (excess return over downside deviation), the downside-only companion to the
+  existing rolling Sharpe.
+- 3 new tests.
+
 ## 0.49.0 - capture ratios
 
 - `performance/active.py` gains `capture_ratios`: the up-capture and down-capture
