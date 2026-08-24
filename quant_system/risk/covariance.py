@@ -47,3 +47,21 @@ def ledoit_wolf_shrinkage(returns) -> Tuple[np.ndarray, float]:
     if labels is not None:
         shrunk = pd.DataFrame(shrunk, index=labels, columns=labels)
     return shrunk, shrink
+
+
+def effective_number_of_bets(cov) -> float:
+    """Effective number of independent bets in a covariance (Meucci-style).
+
+    Diagonalising the covariance gives uncorrelated principal portfolios; the
+    entropy of how variance is spread across them, exponentiated, is the effective
+    number of bets. It equals N when the N assets are uncorrelated and falls toward
+    1 as they collapse onto a single common factor.
+    """
+    matrix = np.asarray(cov, dtype=float)
+    eig = np.linalg.eigvalsh(matrix)
+    eig = eig[eig > 0]
+    if eig.size == 0:
+        return float("nan")
+    p = eig / eig.sum()
+    entropy = -np.sum(p * np.log(p))
+    return float(np.exp(entropy))

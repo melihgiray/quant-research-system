@@ -3,7 +3,12 @@
 import numpy as np
 import pandas as pd
 
-from quant_system.risk.covariance import ledoit_wolf_shrinkage
+import pytest
+
+from quant_system.risk.covariance import (
+    effective_number_of_bets,
+    ledoit_wolf_shrinkage,
+)
 
 
 def _correlated(T, N=15, seed=0):
@@ -38,3 +43,21 @@ def test_labels_are_preserved_for_a_dataframe():
     df = pd.DataFrame(_correlated(60, N=4), columns=["a", "b", "c", "d"])
     shrunk, _ = ledoit_wolf_shrinkage(df)
     assert list(shrunk.columns) == ["a", "b", "c", "d"]
+
+
+def test_enb_equals_n_for_uncorrelated_assets():
+    assert effective_number_of_bets(np.eye(5)) == pytest.approx(5.0)
+
+
+def test_enb_collapses_toward_one_when_highly_correlated():
+    rho = 0.98
+    n = 5
+    cov = np.full((n, n), rho) + np.eye(n) * (1 - rho)   # one dominant common factor
+    assert effective_number_of_bets(cov) < 1.5
+
+
+def test_enb_is_between_for_moderate_correlation():
+    n = 5
+    cov = np.full((n, n), 0.3) + np.eye(n) * 0.7
+    enb = effective_number_of_bets(cov)
+    assert 1.0 < enb < n
