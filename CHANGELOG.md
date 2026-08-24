@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.49.0 - capture ratios
+
+- `performance/active.py` gains `capture_ratios`: the up-capture and down-capture
+  against a benchmark (mean strategy return over mean benchmark return on the
+  benchmark's up and down days). A defensive strategy shows high up capture and low
+  down capture.
+- 3 new tests.
+
 ## 0.48.0 - information ratio and tracking error
 
 - `performance/active.py`: benchmark-relative metrics. `tracking_error` is the
