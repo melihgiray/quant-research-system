@@ -14,6 +14,11 @@ from .hrp import (
     inverse_variance_weights,
     recursive_bisection,
 )
+from .risk_budget import (
+    erc_weights,
+    max_diversification_weights,
+    risk_contributions,
+)
 
 __all__ = [
     "inverse_vol_allocations",
@@ -26,4 +31,7 @@ __all__ = [
     "cluster_order",
     "correlation_distance",
     "recursive_bisection",
+    "erc_weights",
+    "max_diversification_weights",
+    "risk_contributions",
 ]
