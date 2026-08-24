@@ -90,3 +90,17 @@ def kelly_weights(
     w = kelly_fraction * w_full
     w = np.clip(w, -max_weight, max_weight)
     return pd.Series(w, index=tickers, name="kelly_weight")
+
+
+def growth_optimal_fraction(returns: pd.Series) -> float:
+    """Growth-optimal (Kelly) fraction for a single return stream: mean / variance.
+
+    The continuous-time Kelly leverage that maximises long-run log growth is the
+    per-period mean over the per-period variance. It rises with edge and falls with
+    variance; halving it (half-Kelly) is the usual practical hedge against estimation
+    error."""
+    r = returns.dropna()
+    var = float(r.var())
+    if var == 0 or r.empty:
+        return float("nan")
+    return float(r.mean() / var)
