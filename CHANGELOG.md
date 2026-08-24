@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.46.0 - tail ratio
+
+- `risk/metrics.py` gains `tail_ratio`: the size of the right return tail over the
+  left (e.g. 95th percentile over the absolute 5th), a quick read on asymmetry that
+  is ~1 for symmetric returns, above 1 for right-skewed and below for left-skewed.
+- 3 new tests.
+
 ## 0.45.0 - conditional drawdown at risk
 
 - `risk/metrics.py` gains `conditional_drawdown_at_risk`: the average of the worst
