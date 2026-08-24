@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.41.0 - Ledoit-Wolf covariance shrinkage
+
+- `risk/covariance.py`: `ledoit_wolf_shrinkage` shrinks the sample covariance
+  toward a scaled identity by the optimal intensity (Ledoit and Wolf 2004), which
+  conditions the matrix for the allocators. The intensity falls as data grows, and
+  the shrunk matrix is better conditioned than the raw sample covariance when
+  observations are scarce.
+- 4 new tests.
+
 ## 0.40.0 - Omega ratio
 
 - `risk/metrics.py` gains `omega_ratio`: total gains above a threshold over total
