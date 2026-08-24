@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.45.0 - conditional drawdown at risk
+
+- `risk/metrics.py` gains `conditional_drawdown_at_risk`: the average of the worst
+  tail of the underwater curve, a drawdown analogue of expected shortfall that is
+  less hostage to a single worst point than max drawdown.
+- 3 new tests.
+
 ## 0.44.0 - effective number of bets
 
 - `risk/covariance.py` gains `effective_number_of_bets`: the exponentiated entropy
