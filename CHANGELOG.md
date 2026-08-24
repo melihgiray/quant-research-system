@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.52.0 - SADF explosiveness test
+
+- `stats.py` gains `sadf`: the supremum Augmented Dickey-Fuller statistic
+  (Phillips-Shi-Yu; Lopez de Prado, ch. 17) for detecting explosive, bubble-like
+  behaviour. For each end point it takes the largest Dickey-Fuller statistic over
+  backward-expanding windows; a random walk stays below ~1, while an explosive AR
+  series pushes it sharply positive.
+- 3 new tests.
+
 ## 0.51.0 - combinatorial purged cross-validation
 
 - `signals/combinatorial_cv.py`: `combinatorial_purged_splits` partitions the data
