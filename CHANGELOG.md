@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.30.0 - triple-barrier labeling
+
+- `signals/labeling.py`: triple-barrier labels (Lopez de Prado). Each event is
+  labeled by the first barrier its forward path touches, a volatility-scaled
+  profit target (+1), a stop (-1), or a holding-period limit (the sign of the
+  return at the limit), so the label reflects the path a trade would have taken
+  rather than only its endpoint. `ewm_volatility` sets the barrier widths.
+- Barrier widths scale with volatility, so a target means the same in a calm and
+  a wild market; disabling a horizontal barrier (pt or sl of 0) is supported, and
+  events without a volatility estimate are skipped.
+- 6 new tests (321 total).
+
 ## 0.29.0 - paper-book repricing harness
 
 - `options/monitor.py`: `repricing_health` grades a built surface pass/fail, so a

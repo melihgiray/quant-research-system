@@ -203,6 +203,11 @@ Three strategies:
   passes an augmented Dickey-Fuller test. On a random walk that is about d = 0.3,
   which stays ~0.9 correlated with the level, where a full first difference keeps
   almost none of it. `min_ffd_order` searches for that order.
+- **Triple-barrier labeling** (Lopez de Prado). Instead of "up in N days?", each
+  position is labeled by which barrier its forward path touches first: a
+  volatility-scaled profit target (+1), a stop (-1), or a holding-period limit
+  (the sign of the return there). The label reflects what would actually have
+  happened to the trade, path and all, not just the endpoint.
 
 There is also a single-stock **options** leg: pricing and Greeks, a vol surface
 built from live chains, and strategy backtests.
