@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.44.0 - effective number of bets
+
+- `risk/covariance.py` gains `effective_number_of_bets`: the exponentiated entropy
+  of how variance spreads across a covariance's principal portfolios. It equals N
+  for N uncorrelated assets and falls toward 1 as they collapse onto one common
+  factor, a diversification measure that sees through correlation.
+- 3 new tests.
+
 ## 0.43.0 - sample autocorrelation
 
 - `stats.py` gains `autocorrelation`: the sample autocorrelation at a lag. Near 0
