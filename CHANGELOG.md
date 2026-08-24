@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.48.0 - information ratio and tracking error
+
+- `performance/active.py`: benchmark-relative metrics. `tracking_error` is the
+  annualised volatility of the return difference to a benchmark, and
+  `information_ratio` is the annualised active return over that tracking error, a
+  measure of skill relative to the benchmark rather than in absolute terms.
+- 3 new tests.
+
 ## 0.47.0 - growth-optimal Kelly fraction
 
 - `risk/sizing.py` gains `growth_optimal_fraction`: the single-stream Kelly leverage
