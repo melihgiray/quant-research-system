@@ -181,6 +181,20 @@ def omega_ratio(returns: pd.Series, threshold: float = 0.0) -> float:
     return float(gains / losses)
 
 
+def conditional_drawdown_at_risk(returns: pd.Series, level: float = 0.95) -> float:
+    """Average of the worst ``1 - level`` fraction of drawdowns, as a positive loss.
+
+    Where max drawdown is the single worst point, CDaR summarises the whole bad
+    tail of the underwater curve, so it is less hostage to one outlier."""
+    dd = drawdown_series(returns)
+    if dd.empty:
+        return float("nan")
+    depths = -dd.to_numpy()                               # drawdown magnitudes >= 0
+    threshold = np.quantile(depths, level)
+    tail = depths[depths >= threshold]
+    return float(tail.mean()) if tail.size else float(threshold)
+
+
 def max_drawdown_duration(returns: pd.Series) -> int:
     """Longest stretch (in periods) spent below a previous equity peak.
 
