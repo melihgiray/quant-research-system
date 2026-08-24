@@ -78,3 +78,30 @@ def test_ar1_autocorrelation_matches_phi():
 def test_autocorrelation_rejects_bad_lag():
     with pytest.raises(ValueError, match="1 <= lag"):
         autocorrelation(_ar1(0.5), lag=0)
+
+
+def _bubble(seed=0):
+    rng = np.random.default_rng(seed)
+    b = list(np.cumsum(rng.normal(0, 1, 150)))
+    v = b[-1]
+    for _ in range(100):
+        v = 1.05 * v + rng.normal(0, 1)                  # explosive AR: coefficient > 1
+        b.append(v)
+    return np.array(b)
+
+
+def test_sadf_stays_low_for_a_random_walk():
+    from quant_system.stats import sadf
+    assert np.nanmax(sadf(_random_walk(n=300))) < 2.0
+
+
+def test_sadf_spikes_for_an_explosive_bubble():
+    from quant_system.stats import sadf
+    assert np.nanmax(sadf(_bubble())) > 5.0
+
+
+def test_sadf_warmup_is_nan():
+    from quant_system.stats import sadf
+    out = sadf(_random_walk(n=200), min_window=40)
+    assert np.isnan(out[:80]).all()
+    assert len(out) == 200

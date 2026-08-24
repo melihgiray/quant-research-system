@@ -61,3 +61,44 @@ def autocorrelation(series, lag: int = 1) -> float:
         return float("nan")
     c_lag = np.dot(x[:-lag], x[lag:]) / n
     return float(c_lag / c0)
+
+
+def _dickey_fuller_stat(y: np.ndarray) -> float:
+    """t-statistic on the lagged level in a Dickey-Fuller regression of dy on y_{t-1}.
+
+    A large positive value means the level pulls further away rather than
+    reverting, i.e. explosive (bubble-like) behaviour."""
+    lagged = y[:-1]
+    dy = np.diff(y)
+    design = np.column_stack([np.ones_like(lagged), lagged])
+    dof = len(dy) - 2
+    if dof <= 0:
+        return float("nan")
+    beta, *_ = np.linalg.lstsq(design, dy, rcond=None)
+    resid = dy - design @ beta
+    s2 = float(resid @ resid) / dof
+    se = np.sqrt(s2 * np.linalg.inv(design.T @ design)[1, 1])
+    return float(beta[1] / se) if se > 0 else float("nan")
+
+
+def sadf(series, min_window: int = 40, stride: int = 3) -> np.ndarray:
+    """Supremum Augmented Dickey-Fuller statistic for explosiveness (bubble) detection.
+
+    For each end point, take the largest Dickey-Fuller statistic over all
+    backward-expanding start points; a spike means the series is behaving
+    explosively up to that point (Phillips-Shi-Yu / Lopez de Prado, ch. 17). Random
+    walks stay low, bubbles push it sharply positive. ``stride`` subsamples the
+    start points to keep it tractable. The first ``2 * min_window`` values are NaN.
+    """
+    x = np.asarray(series, dtype=float)
+    n = len(x)
+    out = np.full(n, np.nan)
+    for t in range(min_window * 2, n):
+        best = -np.inf
+        for t0 in range(0, t - min_window, stride):
+            stat = _dickey_fuller_stat(x[t0:t + 1])
+            if np.isfinite(stat) and stat > best:
+                best = stat
+        if np.isfinite(best):
+            out[t] = best
+    return out
