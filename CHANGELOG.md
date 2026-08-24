@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.37.0 - Roll's implied spread
+
+- `microstructure.py`: `roll_spread` recovers an effective bid-ask spread from the
+  serial covariance of daily price changes (Roll 1984), needing only closes. A
+  test plants a known bounce spread and recovers it to a few percent, and a
+  bounce-free series reads ~0.
+- 3 new tests.
+
 ## 0.36.0 - variance-ratio test
 
 - `stats.py` gains `variance_ratio` (Lo-MacKinlay): the per-period variance of
