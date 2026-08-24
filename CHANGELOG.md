@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.28.0 - fractional differentiation
+
+- `signals/frac_diff.py`: fixed-width fractional differentiation (Lopez de
+  Prado). `ffd_weights` builds the truncated binomial weights (they reduce to
+  `[1, -1]` at d=1 and `[1]` at d=0), `frac_diff_ffd` applies them, and
+  `min_ffd_order` searches for the smallest order whose series passes an
+  augmented Dickey-Fuller test.
+- The point, shown in the tests: a random walk needs about d=0.3 to become
+  stationary, and at that order it stays ~0.9 correlated with the price level,
+  where a full first difference (d=1) keeps almost none of the memory. That is
+  the trade fractional differencing is for, stationarity without amnesia.
+- 7 new tests (309 total).
+
 ## 0.27.0 - shared research helpers (refactor)
 
 - `quant_system/research.py` holds the setup the result scripts all repeated: the

@@ -197,6 +197,12 @@ Three strategies:
   permutation-null p-value per feature, Benjamini-Hochberg corrected across the
   eight (`--feature-fdr`), so a feature that only looks significant because eight
   were tested gets demoted.
+- **Fractional differentiation** for stationary-but-memory-preserving features
+  (Lopez de Prado). First differencing a price makes it stationary but discards
+  almost all of its memory; a fractional order finds the least differencing that
+  passes an augmented Dickey-Fuller test. On a random walk that is about d = 0.3,
+  which stays ~0.9 correlated with the level, where a full first difference keeps
+  almost none of it. `min_ffd_order` searches for that order.
 
 There is also a single-stock **options** leg: pricing and Greeks, a vol surface
 built from live chains, and strategy backtests.
