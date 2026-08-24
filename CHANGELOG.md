@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.39.0 - ulcer index and pain ratio
+
+- `risk/metrics.py` gains `ulcer_index` (root-mean-square drawdown, which unlike
+  max drawdown penalises how long as well as how deep a series stays underwater)
+  and `pain_ratio` (annualised return over the ulcer index).
+- 5 new tests.
+
 ## 0.38.0 - Amihud illiquidity
 
 - `microstructure.py` gains `amihud_illiquidity`, the average absolute return per
