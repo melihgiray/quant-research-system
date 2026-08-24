@@ -3,7 +3,13 @@
 import numpy as np
 import pandas as pd
 
-from quant_system.signals.labeling import ewm_volatility, triple_barrier_labels
+import pytest
+
+from quant_system.signals.labeling import (
+    cusum_events,
+    ewm_volatility,
+    triple_barrier_labels,
+)
 
 
 def _series(values):
@@ -55,3 +61,40 @@ def test_ewm_volatility_is_positive_after_warmup():
     close = _series(np.cumprod(1 + np.random.default_rng(0).normal(0, 0.01, 300)) * 100)
     vol = ewm_volatility(close)
     assert (vol.dropna() >= 0).all()
+
+
+def test_cusum_fires_on_a_steady_rise_at_the_expected_cadence():
+    series = _series(np.arange(0.0, 5.0, 0.25))       # rises 0.25 each step
+    events = cusum_events(series, threshold=1.0)      # every 4 steps the run hits 1.0
+    assert events == [4, 8, 12, 16]
+
+
+def test_cusum_is_silent_on_a_flat_series():
+    assert cusum_events(_series([5.0] * 20), threshold=0.5) == []
+
+
+def test_cusum_is_symmetric_on_down_moves():
+    series = _series(np.arange(0.0, -3.0, -0.5))       # falls 0.5 each step
+    events = cusum_events(series, threshold=1.0)
+    assert events == [2, 4]                            # a run down of 1.0 also triggers
+
+
+def test_cusum_catches_both_directions():
+    series = _series([0, 1, 2, 3, 2, 1, 0, -1])        # up then down
+    events = cusum_events(series, threshold=1.5)
+    assert events                                      # fires on the up leg and the down leg
+    assert events == sorted(events)
+
+
+def test_cusum_rejects_a_nonpositive_threshold():
+    with pytest.raises(ValueError, match="threshold must be positive"):
+        cusum_events(_series([1.0, 2.0, 3.0]), threshold=0.0)
+
+
+def test_cusum_events_feed_the_barrier_labeler():
+    rng = np.random.default_rng(3)
+    close = _series(np.cumprod(1 + rng.normal(0, 0.01, 400)) * 100)
+    events = cusum_events(np.log(close), threshold=0.02)   # 2% cumulative-return events
+    labels = triple_barrier_labels(close, events, pt=1.0, sl=1.0, vertical=10)
+    assert len(labels) > 0
+    assert set(labels["label"].unique()) <= {-1, 0, 1}

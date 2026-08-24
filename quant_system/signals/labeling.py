@@ -14,7 +14,7 @@ and a wild market.
 
 from __future__ import annotations
 
-from typing import Iterable, Optional
+from typing import Iterable, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -23,6 +23,39 @@ import pandas as pd
 def ewm_volatility(close: pd.Series, span: int = 100) -> pd.Series:
     """Exponentially-weighted return volatility, for scaling the barriers."""
     return close.pct_change().ewm(span=span).std()
+
+
+def cusum_events(series: pd.Series, threshold: float) -> List[int]:
+    """Symmetric CUSUM filter: positions where a run of moves exceeds ``threshold``.
+
+    (Lopez de Prado, ch. 2.) Sampling every bar wastes model capacity on
+    quiet noise; this keeps only the bars where the cumulative move since the last
+    event, up or down, breaks a threshold, so the events cluster where something
+    happened. Running positive and negative sums accumulate the step-to-step
+    changes and reset to zero whenever one crosses the threshold.
+
+    Pass log prices to make ``threshold`` a cumulative-return level. Returns
+    integer positions into ``series``, ready to feed ``triple_barrier_labels``.
+    """
+    if threshold <= 0:
+        raise ValueError("threshold must be positive")
+    values = np.asarray(series, dtype=float)
+    events: List[int] = []
+    s_pos = 0.0
+    s_neg = 0.0
+    for i in range(1, len(values)):
+        diff = values[i] - values[i - 1]
+        if not np.isfinite(diff):
+            continue
+        s_pos = max(0.0, s_pos + diff)
+        s_neg = min(0.0, s_neg + diff)
+        if s_pos >= threshold:
+            s_pos = 0.0
+            events.append(i)
+        elif s_neg <= -threshold:
+            s_neg = 0.0
+            events.append(i)
+    return events
 
 
 def triple_barrier_labels(close: pd.Series,
