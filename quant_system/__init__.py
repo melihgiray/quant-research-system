@@ -18,4 +18,4 @@ Design rules that hold across the whole package:
   * Everything that touches a parameter reads it from :mod:`quant_system.config`.
 """
 
-__version__ = "0.35.0"
+__version__ = "0.36.0"

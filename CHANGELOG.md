@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.36.0 - variance-ratio test
+
+- `stats.py` gains `variance_ratio` (Lo-MacKinlay): the per-period variance of
+  q-step moves over 1-step moves, ~1 for a random walk, above 1 when trending,
+  below 1 when mean-reverting. Verified across all three regimes.
+- 4 new tests.
+
 ## 0.35.0 - Hurst exponent
 
 - `quant_system/stats.py`: `hurst_exponent` estimates long-memory from the scaling
