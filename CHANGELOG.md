@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.47.0 - growth-optimal Kelly fraction
+
+- `risk/sizing.py` gains `growth_optimal_fraction`: the single-stream Kelly leverage
+  that maximises long-run log growth, mean over variance. It rises with edge and
+  falls with variance, complementing the existing portfolio `kelly_weights`.
+- 3 new tests.
+
 ## 0.46.0 - tail ratio
 
 - `risk/metrics.py` gains `tail_ratio`: the size of the right return tail over the
