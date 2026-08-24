@@ -4,7 +4,7 @@ import numpy as np
 
 import pytest
 
-from quant_system.stats import hurst_exponent, variance_ratio
+from quant_system.stats import autocorrelation, hurst_exponent, variance_ratio
 
 
 def _random_walk(n=8000, seed=0):
@@ -54,3 +54,27 @@ def test_variance_ratio_below_one_when_mean_reverting():
 def test_variance_ratio_rejects_small_q():
     with pytest.raises(ValueError, match="q >= 2"):
         variance_ratio(_random_walk(), q=1)
+
+
+def _ar1(phi, n=20000, seed=5):
+    rng = np.random.default_rng(seed)
+    x = np.zeros(n)
+    for i in range(1, n):
+        x[i] = phi * x[i - 1] + rng.normal(0, 1)
+    return x
+
+
+def test_white_noise_has_near_zero_autocorrelation():
+    noise = np.random.default_rng(6).normal(0, 1, 20000)
+    assert abs(autocorrelation(noise, lag=1)) < 0.03
+
+
+def test_ar1_autocorrelation_matches_phi():
+    x = _ar1(0.6)
+    assert abs(autocorrelation(x, lag=1) - 0.6) < 0.03
+    assert abs(autocorrelation(x, lag=2) - 0.36) < 0.04     # phi**2
+
+
+def test_autocorrelation_rejects_bad_lag():
+    with pytest.raises(ValueError, match="1 <= lag"):
+        autocorrelation(_ar1(0.5), lag=0)

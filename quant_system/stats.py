@@ -43,3 +43,21 @@ def variance_ratio(series, q: int = 2) -> float:
     if var_1 == 0:
         return float("nan")
     return float((var_q / q) / var_1)
+
+
+def autocorrelation(series, lag: int = 1) -> float:
+    """Sample autocorrelation at ``lag``: how much the series remembers itself.
+
+    Near 0 for white noise; for an AR(1) with coefficient phi it is about phi at
+    lag 1 and phi**k at lag k.
+    """
+    x = np.asarray(series, dtype=float)
+    x = x - x.mean()
+    n = len(x)
+    if lag < 1 or lag >= n:
+        raise ValueError("need 1 <= lag < len(series)")
+    c0 = np.dot(x, x) / n
+    if c0 == 0:
+        return float("nan")
+    c_lag = np.dot(x[:-lag], x[lag:]) / n
+    return float(c_lag / c0)
