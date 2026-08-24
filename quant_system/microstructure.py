@@ -24,3 +24,21 @@ def roll_spread(prices) -> float:
         return float("nan")
     cov = np.cov(changes[:-1], changes[1:])[0, 1]
     return float(2.0 * np.sqrt(-cov)) if cov < 0 else 0.0
+
+
+def amihud_illiquidity(prices, volume) -> float:
+    """Amihud's (2002) illiquidity: average of |return| per dollar of volume.
+
+    Larger means a given dollar of trading moves the price more, i.e. thinner
+    liquidity. Days with non-positive dollar volume are skipped.
+    """
+    prices = np.asarray(prices, dtype=float)
+    volume = np.asarray(volume, dtype=float)
+    if len(prices) < 2:
+        return float("nan")
+    returns = np.abs(np.diff(prices) / prices[:-1])
+    dollar_volume = prices[1:] * volume[1:]
+    valid = dollar_volume > 0
+    if not valid.any():
+        return float("nan")
+    return float(np.mean(returns[valid] / dollar_volume[valid]))
