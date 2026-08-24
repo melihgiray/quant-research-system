@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.34.0 - bet sizing from probabilities
+
+- `signals/bet_sizing.py`: `bet_size` turns a classifier's probability that its
+  side is correct into a size in [-1, 1] via the Lopez de Prado map, a coin flip
+  sizes to zero and near-certainty to a full bet; `discretize_bets` rounds sizes
+  to a step so small probability wiggles do not churn the book.
+- 6 new tests.
+
 ## 0.33.0 - risk-budgeting allocators
 
 - `portfolio/risk_budget.py`: `erc_weights` solves for equal-risk-contribution
