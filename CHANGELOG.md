@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.35.0 - Hurst exponent
+
+- `quant_system/stats.py`: `hurst_exponent` estimates long-memory from the scaling
+  of lagged-difference dispersion. Tested across the three regimes: a random walk
+  reads ~0.5, positively-autocorrelated increments read above 0.5 (persistent),
+  and an OU-like series reads below 0.5 (mean-reverting).
+- 3 new tests.
+
 ## 0.34.0 - bet sizing from probabilities
 
 - `signals/bet_sizing.py`: `bet_size` turns a classifier's probability that its
