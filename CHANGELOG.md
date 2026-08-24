@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.38.0 - Amihud illiquidity
+
+- `microstructure.py` gains `amihud_illiquidity`, the average absolute return per
+  dollar of volume (Amihud 2002); higher means thinner liquidity. It scales
+  inversely with volume and skips zero-volume days.
+- 2 new tests.
+
 ## 0.37.0 - Roll's implied spread
 
 - `microstructure.py`: `roll_spread` recovers an effective bid-ask spread from the
