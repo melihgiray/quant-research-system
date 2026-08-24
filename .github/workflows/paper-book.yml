@@ -1,0 +1,40 @@
+# Reprices a small paper option book from a live chain and uploads the run log.
+#
+# This is opt-in. It runs only when triggered by hand (Actions tab -> "Run
+# workflow"). The daily schedule is left commented out so merging this file does
+# not start consuming Actions minutes or add automated commits on its own; the
+# job never commits anything, it only uploads the log as an artifact. To run it
+# daily, uncomment the `schedule` block.
+name: paper-book
+
+on:
+  workflow_dispatch:
+  # schedule:
+  #   - cron: "30 21 * * 1-5"   # 21:30 UTC on weekdays (after the US close)
+
+jobs:
+  reprice:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+
+      - name: Reprice and health-check
+        run: python scripts/reprice_paper_book.py --ticker SPY --out paper_book_log.json
+
+      - name: Upload the run log
+        if: always()               # keep the log even when the health check fails the job
+        uses: actions/upload-artifact@v4
+        with:
+          name: paper-book-log
+          path: paper_book_log.json
