@@ -2,7 +2,9 @@
 
 import numpy as np
 
-from quant_system.stats import hurst_exponent
+import pytest
+
+from quant_system.stats import hurst_exponent, variance_ratio
 
 
 def _random_walk(n=8000, seed=0):
@@ -35,3 +37,20 @@ def test_persistent_series_exceeds_half():
 
 def test_mean_reverting_series_is_below_half():
     assert hurst_exponent(_mean_reverting()) < 0.45
+
+
+def test_variance_ratio_near_one_for_a_random_walk():
+    assert abs(variance_ratio(_random_walk(), q=4) - 1.0) < 0.1
+
+
+def test_variance_ratio_above_one_when_persistent():
+    assert variance_ratio(_persistent(), q=4) > 1.2
+
+
+def test_variance_ratio_below_one_when_mean_reverting():
+    assert variance_ratio(_mean_reverting(), q=4) < 0.8
+
+
+def test_variance_ratio_rejects_small_q():
+    with pytest.raises(ValueError, match="q >= 2"):
+        variance_ratio(_random_walk(), q=1)

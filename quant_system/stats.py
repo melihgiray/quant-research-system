@@ -26,3 +26,20 @@ def hurst_exponent(series, min_lag: int = 2, max_lag: int = 80) -> float:
         return float("nan")
     slope = np.polyfit(np.log(lags[good]), np.log(tau[good]), 1)[0]
     return float(slope)
+
+
+def variance_ratio(series, q: int = 2) -> float:
+    """Lo-MacKinlay variance ratio: per-period variance of q-step vs 1-step moves.
+
+    Under a random walk the variance of q-period changes is q times the variance
+    of 1-period changes, so the ratio is ~1. A ratio above 1 signals positive
+    autocorrelation (trending), below 1 signals mean reversion.
+    """
+    x = np.asarray(series, dtype=float)
+    if q < 2 or len(x) <= q:
+        raise ValueError("need q >= 2 and more observations than q")
+    var_1 = np.diff(x).var(ddof=1)
+    var_q = (x[q:] - x[:-q]).var(ddof=1)
+    if var_1 == 0:
+        return float("nan")
+    return float((var_q / q) / var_1)
