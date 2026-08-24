@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.33.0 - risk-budgeting allocators
+
+- `portfolio/risk_budget.py`: `erc_weights` solves for equal-risk-contribution
+  (true risk parity) weights, which reduce to inverse-vol only when assets are
+  uncorrelated; `risk_contributions` reports each asset's share of portfolio
+  variance; and `max_diversification_weights` maximises the diversification ratio,
+  tilting toward assets that hedge rather than merely quiet ones.
+- 5 new tests.
+
 ## 0.32.0 - sequential bootstrap
 
 - `signals/sampling.py`: the sequential bootstrap (Lopez de Prado, ch. 4) for
