@@ -143,6 +143,29 @@ def max_drawdown(returns: pd.Series) -> float:
     return float(dd.min()) if len(dd) else float("nan")
 
 
+def ulcer_index(returns: pd.Series) -> float:
+    """Root-mean-square drawdown: penalises both the depth and the duration of
+    drawdowns, unlike max drawdown which sees only the single worst point."""
+    dd = drawdown_series(returns)
+    if dd.empty:
+        return float("nan")
+    return float(np.sqrt(np.mean(dd.to_numpy() ** 2)))
+
+
+def pain_ratio(returns: pd.Series, periods: int = 252) -> float:
+    """Annualised return divided by the ulcer index: a drawdown-aware return/risk
+    ratio that rewards staying out of deep, long underwater stretches."""
+    r = returns.dropna()
+    ui = ulcer_index(returns)
+    if r.empty or not np.isfinite(ui) or ui == 0:
+        return float("nan")
+    growth = float((1.0 + r).prod())
+    if growth <= 0:
+        return float("nan")
+    annualised = growth ** (periods / len(r)) - 1.0
+    return float(annualised / ui)
+
+
 def max_drawdown_duration(returns: pd.Series) -> int:
     """Longest stretch (in periods) spent below a previous equity peak.
 
