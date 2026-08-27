@@ -36,10 +36,27 @@ from quant_system.data.loader import load_price_data
 from quant_system.research import research_universe
 from quant_system.performance.analytics import compute_metrics
 from quant_system.portfolio import hrp_weights, inverse_variance_weights
+from quant_system.risk.covariance import ledoit_wolf_shrinkage
 
 OUT_DIR = "docs/results"
 LOOKBACK = 252          # trailing year for the covariance estimate
 STEP = 21               # rebalance monthly
+
+
+def _shrunk_cov(window: pd.DataFrame) -> pd.DataFrame:
+    """Ledoit-Wolf shrunk covariance of a return window, labelled by ticker."""
+    return ledoit_wolf_shrinkage(window)[0]
+
+
+def _cov_to_corr(cov: pd.DataFrame) -> pd.DataFrame:
+    d = np.sqrt(np.diag(cov.to_numpy()))
+    corr = cov.to_numpy() / np.outer(d, d)
+    return pd.DataFrame(corr, index=cov.index, columns=cov.columns)
+
+
+def _hrp_shrunk(window: pd.DataFrame):
+    cov = _shrunk_cov(window)
+    return hrp_weights(cov=cov, corr=_cov_to_corr(cov))
 
 
 def _rolling_allocation(rets: pd.DataFrame, weigh):
@@ -76,7 +93,9 @@ def main() -> int:
 
     books = {
         "HRP": lambda w: hrp_weights(w),
+        "HRP (Ledoit-Wolf)": _hrp_shrunk,
         "Inverse-variance": lambda w: inverse_variance_weights(w.cov()),
+        "Inverse-variance (Ledoit-Wolf)": lambda w: inverse_variance_weights(_shrunk_cov(w)),
         "Equal weight": lambda w: pd.Series(1.0 / w.shape[1], index=w.columns),
     }
 
@@ -94,7 +113,7 @@ def main() -> int:
           f"{span}, gross of trading costs.\n")
     print("| Allocator | Sharpe | Ann. return | Ann. vol | Max drawdown | Effective N |")
     print("|---|---|---|---|---|---|")
-    for name in ("HRP", "Inverse-variance", "Equal weight"):
+    for name in books:
         m = results[name]["metrics"]
         eff = 1.0 / results[name]["herfindahl"]
         print(f"| {name} | {m['sharpe']:.2f} | {m['ann_return']:+.1%} | {m['ann_vol']:.1%} "

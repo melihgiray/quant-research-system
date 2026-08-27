@@ -85,21 +85,33 @@ quality, not execution). Reproduce with `python scripts/build_hrp_results.py`.
 
 | Allocator | Sharpe | Ann. return | Ann. vol | Max drawdown | Effective N |
 |---|---|---|---|---|---|
-| HRP | 1.15 | +15.8% | 13.5% | -29.3% | 23.7 |
-| Inverse-variance | 0.97 | +14.3% | 15.0% | -32.5% | 32.6 |
-| Equal weight | 1.10 | +18.8% | 16.9% | -33.9% | 43.5 |
+| HRP | 1.15 | +15.8% | 13.5% | -28.4% | 22.6 |
+| HRP (Ledoit-Wolf) | 1.12 | +15.3% | 13.6% | -29.2% | 24.6 |
+| Inverse-variance | 0.97 | +14.2% | 14.9% | -32.3% | 31.0 |
+| Inverse-variance (Ledoit-Wolf) | 0.97 | +14.5% | 15.1% | -32.3% | 32.4 |
+| Equal weight | 1.10 | +18.8% | 16.9% | -33.7% | 41.5 |
 
 ![HRP vs inverse-variance](docs/results/hrp_vs_ivp.png)
 
-HRP does what the paper claims: the best risk-adjusted return of the three, the
-lowest realised volatility, and the shallowest drawdown. The counter-intuitive
-column is effective N (one over the Herfindahl index of the weights): HRP holds
-fewer effective names than inverse-variance, not more. It is more concentrated
-by name, yet realises less risk, because it diversifies in risk space rather
-than trying to own a little of everything. Equal weight earns the most raw
-return here by leaning into a strong-equity decade, but pays for it in the
-highest volatility and the deepest drawdown, which is the whole point of a
-risk-based allocator.
+HRP does what the paper claims: the best risk-adjusted return, the lowest realised
+volatility, and the shallowest drawdown. The counter-intuitive column is effective
+N (one over the Herfindahl index of the weights): HRP holds fewer effective names
+than inverse-variance, not more. It is more concentrated by name, yet realises
+less risk, because it diversifies in risk space rather than trying to own a little
+of everything. Equal weight earns the most raw return here by leaning into a
+strong-equity decade, but pays for it in the highest volatility and the deepest
+drawdown, which is the whole point of a risk-based allocator.
+
+The Ledoit-Wolf rows are the honest test of a tempting upgrade: shrinking the
+covariance toward a well-conditioned target barely moves either allocator (HRP
+1.15 to 1.12, inverse-variance unchanged). That is the expected result once you
+look at why. Shrinkage exists to tame the ill-conditioning that wrecks anything
+which *inverts* the covariance, i.e. mean-variance optimisation. HRP never inverts
+it (that is its whole selling point), and inverse-variance uses only the diagonal,
+so there is little for shrinkage to fix. The near-zero effect is a feature, not a
+disappointment: it shows these allocators already sidestep the problem shrinkage
+is for. The chart plots the three headline books; the shrunk variants sit almost
+exactly on top of them.
 
 ### Allocating across the sleeves: inverse-vol vs HRP
 
