@@ -33,7 +33,8 @@ from quant_system.backtest.walk_forward import walk_forward
 from quant_system.regime.detector import detect_regime
 from quant_system.performance.analytics import compute_metrics
 from quant_system.portfolio import (
-    blend_returns, hrp_allocations, inverse_vol_allocations, volatility_target,
+    blend_returns, erc_allocations, hrp_allocations, inverse_vol_allocations,
+    volatility_target,
 )
 
 OUT_DIR = "docs/results"
@@ -78,6 +79,8 @@ def main() -> int:
                                        inverse_vol_allocations(sleeve_returns, lookback=lookback)),
         "HRP blend": _targeted(sleeve_returns,
                                hrp_allocations(sleeve_returns, lookback=252, refit_every=21)),
+        "ERC blend": _targeted(sleeve_returns,
+                               erc_allocations(sleeve_returns, lookback=252, refit_every=21)),
         "Equal-weight blend": _targeted(
             sleeve_returns,
             pd.DataFrame(1.0 / frame.shape[1], index=frame.index, columns=frame.columns)),

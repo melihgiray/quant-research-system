@@ -113,32 +113,35 @@ disappointment: it shows these allocators already sidestep the problem shrinkage
 is for. The chart plots the three headline books; the shrunk variants sit almost
 exactly on top of them.
 
-### Allocating across the sleeves: inverse-vol vs HRP
+### Allocating across the sleeves: inverse-vol vs HRP vs ERC
 
 The blended book above splits capital across the three sleeves by inverse
-volatility. HRP is the correlation-aware alternative: cluster the sleeves and
-split the risk budget down the tree. This runs both (and naive equal weight) on
-the same three out-of-sample sleeve streams, each combined into one 10%-vol
-book, scored on the same window. Reproduce with
-`python scripts/build_hrp_blend_results.py`.
+volatility. HRP clusters the sleeves and splits the risk budget down a tree; ERC
+(equal risk contribution) solves for weights whose risk contributions are equal
+under the full covariance. This runs all three (and naive equal weight) on the
+same out-of-sample sleeve streams, each combined into one 10%-vol book, scored on
+the same window. Reproduce with `python scripts/build_hrp_blend_results.py`.
 
 | Sleeve allocation | OOS Sharpe | Ann. return | Ann. vol | Max drawdown |
 |---|---|---|---|---|
-| Inverse-vol blend | 0.09 | +0.2% | 2.7% | -4.8% |
-| HRP blend | 0.26 | +0.9% | 3.4% | -6.7% |
-| Equal-weight blend | -0.02 | -0.7% | 9.5% | -17.3% |
+| Inverse-vol blend | 0.23 | +1.1% | 5.6% | -9.1% |
+| HRP blend | 0.28 | +0.9% | 3.4% | -6.6% |
+| ERC blend | -0.13 | -1.3% | 7.9% | -26.3% |
+| Equal-weight blend | -0.01 | -0.5% | 9.5% | -17.3% |
 
-Two honest readings. First, both risk-based methods decisively beat naive equal
-weight, because equal weight hands a third of the book each to the two losing
-sleeves (near-zero momentum and negative-edge ML) while the risk-based methods
-starve them; HRP edges out inverse-vol here, so the correlation-aware step earns
-a little even with only three sleeves. Second, a caveat that matters: both
-risk-based books realize far below the 10% target (2.7 and 3.4%), because they
-concentrate into the low-volatility pairs sleeve and the 3x leverage cap then
-binds, so it cannot lever the calm book back up to target. The low realized vol
-is a consequence of the concentration, not a bug to force away. The absolute
-Sharpes are small because the sleeves are weak; the comparison is about the
-allocation, not a claim that this book is good.
+Two honest readings. First, inverse-vol and HRP beat naive equal weight, because
+equal weight hands a third of the book each to the two losing sleeves (near-zero
+momentum and negative-edge ML) while they starve them, concentrating into the
+low-volatility pairs sleeve that actually made money. Second, and this is the
+interesting one, ERC is the *worst* of the risk-based methods, below even equal
+weight. That is not a bug: ERC works exactly as intended, its risk contributions
+are equal to three decimals. The problem is what "equal risk contribution" means
+here. To give each sleeve the same share of risk under correlation, ERC holds
+pairs at 74% where inverse-variance holds it at 92%, and puts the freed capital
+into the higher-volatility losing sleeves (18% in ML versus 6.6%). Equalising risk
+is a diversification principle, not a skill principle, so when one sleeve is a
+low-vol winner and the others lose, spreading risk evenly spreads capital toward
+the losers. Risk parity balances risk; it does not know which bets deserve it.
 
 ### Meta-labeling the ML sleeve
 
