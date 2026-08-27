@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.55.0 - ERC sleeve allocator and comparison (integration)
+
+- `portfolio/allocator.py` gains `erc_allocations`, a causal rolling equal-risk-
+  contribution allocation across sleeves, alongside inverse-vol and HRP.
+- `scripts/build_hrp_blend_results.py` now includes an ERC blend, wiring the ERC
+  allocator (0.33) into the measured sleeve-allocation comparison.
+- The honest result: ERC is the worst of the risk-based blends (Sharpe -0.13), below
+  even equal weight, and not because of a bug (its risk contributions are equal to
+  three decimals). Equalising risk under correlation holds pairs at 74% where
+  inverse-variance holds 92%, moving the freed capital into the higher-vol losing
+  sleeves; balancing risk is not balancing skill. Written up in the README.
+- 1 new test.
+
 ## 0.54.0 - benchmark metrics in the tearsheet (integration)
 
 - `performance/html_report.py` now renders a "Versus benchmark" block, the
