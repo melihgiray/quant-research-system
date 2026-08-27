@@ -66,3 +66,13 @@ def test_tearsheet_surfaces_cornish_fisher_and_evt():
     text = format_tearsheet(r, title="TAILS")
     assert "Cornish-Fisher" in text
     assert "EVT/GPD" in text
+
+
+def test_tearsheet_surfaces_return_diagnostics():
+    from quant_system.performance.tearsheet import format_tearsheet
+    idx = pd.bdate_range("2019-01-01", periods=1200)
+    r = _left_skewed_fat(n=1200, seed=6)
+    r.index = idx
+    text = format_tearsheet(r, title="DIAG")
+    for label in ("Ulcer index", "CDaR", "Omega", "Tail ratio", "Hurst exponent"):
+        assert label in text

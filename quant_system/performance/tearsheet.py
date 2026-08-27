@@ -22,8 +22,10 @@ from .analytics import compute_metrics
 from .significance import significance_summary
 from ..risk.metrics import (
     drawdown_series, historical_var, conditional_var, parametric_var,
-    cornish_fisher_var, evt_tail,
+    cornish_fisher_var, evt_tail, ulcer_index, omega_ratio, tail_ratio,
+    conditional_drawdown_at_risk,
 )
+from ..stats import hurst_exponent
 
 
 def _fmt_pct(x: float) -> str:
@@ -98,6 +100,12 @@ def format_tearsheet(
         rows.append(f" 95% VaR (Cornish-Fisher) {_fmt_pct(cornish_fisher_var(r, 0.95))}")
         rows.append(f" 99% VaR (EVT/GPD)    {_fmt_pct(et.var)}  "
                     f"(ES {_fmt_pct(et.es)}, tail xi {_fmt_num(et.xi)})")
+        rows.append("-" * width)
+        rows.append(f" Ulcer index          {_fmt_pct(ulcer_index(r))}")
+        rows.append(f" 95% CDaR             {_fmt_pct(conditional_drawdown_at_risk(r, 0.95))}")
+        rows.append(f" Omega (0)            {_fmt_num(omega_ratio(r, 0.0))}")
+        rows.append(f" Tail ratio (95/5)    {_fmt_num(tail_ratio(r, 0.95))}")
+        rows.append(f" Hurst exponent       {_fmt_num(hurst_exponent(r.cumsum().to_numpy()))}")
     if n_trials is not None and not r.empty:
         rows.append("-" * width)
         rows.extend(f" {ln}" for ln in significance_summary(
