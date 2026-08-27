@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.53.0 - shrinkage in the allocator comparison (integration)
+
+- `scripts/build_hrp_results.py` now runs Ledoit-Wolf-shrunk variants of HRP and
+  inverse-variance alongside the originals, wiring the covariance-shrinkage
+  primitive (0.41) into an actual measured backtest.
+- The honest result: shrinkage barely moves either allocator (HRP 1.15 to 1.12,
+  inverse-variance unchanged), because neither inverts the covariance, which is the
+  problem shrinkage exists to fix. Documented in the README as a principled
+  negative result rather than dropped.
+- No new tests (uses existing, tested code); the README HRP table is refreshed.
+
 ## 0.52.0 - SADF explosiveness test
 
 - `stats.py` gains `sadf`: the supremum Augmented Dickey-Fuller statistic
