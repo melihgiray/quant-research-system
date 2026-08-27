@@ -20,6 +20,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
+from .active import capture_ratios, information_ratio, tracking_error
 from .analytics import compute_metrics
 from .rolling import per_year_table, rolling_beta, rolling_sharpe
 from ..risk.metrics import drawdown_series
@@ -54,6 +55,19 @@ def _metrics_html(m: dict) -> str:
     ]
     cells = "".join(f"<div class='metric'><span>{k}</span><b>{v}</b></div>" for k, v in rows)
     return f"<section class='metrics'>{cells}</section>"
+
+
+def _benchmark_html(returns: pd.Series, benchmark: pd.Series) -> str:
+    """A 'versus benchmark' metrics block: information ratio, tracking error, capture."""
+    up, down = capture_ratios(returns, benchmark)
+    rows = [
+        ("Information ratio", _num(information_ratio(returns, benchmark))),
+        ("Tracking error", _pct(tracking_error(returns, benchmark))),
+        ("Up capture", _num(up)),
+        ("Down capture", _num(down)),
+    ]
+    cells = "".join(f"<div class='metric'><span>{k}</span><b>{v}</b></div>" for k, v in rows)
+    return f"<h2>Versus benchmark</h2><section class='metrics'>{cells}</section>"
 
 
 def _per_year_html(df: pd.DataFrame) -> str:
@@ -115,6 +129,8 @@ def build_html_report(returns: pd.Series,
     charts = "".join(f"<figure><figcaption>{name}</figcaption>"
                      f"<img alt='{name}' src='{uri}'></figure>" for name, uri in figures)
 
+    benchmark_block = _benchmark_html(returns, benchmark) if benchmark is not None else ""
+
     return f"""<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -142,6 +158,7 @@ def build_html_report(returns: pd.Series,
   <h1>{title}</h1>
   <p class="span">Out-of-sample, {span}, net of costs.</p>
   {_metrics_html(metrics)}
+  {benchmark_block}
   <h2>By year</h2>
   {_per_year_html(per_year_table(returns, rf_annual=rf_annual))}
   {charts}

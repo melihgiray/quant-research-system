@@ -34,3 +34,12 @@ def test_report_works_without_a_benchmark():
     html = build_html_report(_returns(), benchmark=None)
     assert "Rolling beta" not in html                    # beta panel omitted
     assert "Rolling Sharpe" in html
+    assert "Versus benchmark" not in html                # no benchmark block either
+
+
+def test_benchmark_block_shows_active_metrics():
+    html = build_html_report(_returns(), benchmark=_returns(seed=1))
+    assert "Versus benchmark" in html
+    assert "Information ratio" in html
+    assert "Up capture" in html
+    assert "Tracking error" in html
