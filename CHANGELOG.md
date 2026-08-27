@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.56.0 - return diagnostics in the tearsheet (integration)
+
+- `performance/tearsheet.py` now prints a diagnostics block, ulcer index, 95%
+  conditional drawdown at risk, Omega, tail ratio, and the Hurst exponent of the
+  equity curve, wiring the risk and time-series primitives (0.35, 0.39, 0.40, 0.45,
+  0.46) into the text tearsheet the CLI produces.
+- 1 new test.
+
 ## 0.55.0 - ERC sleeve allocator and comparison (integration)
 
 - `portfolio/allocator.py` gains `erc_allocations`, a causal rolling equal-risk-
