@@ -7,6 +7,7 @@ import pytest
 from quant_system.portfolio.allocator import (
     blend_returns,
     combine_weights,
+    erc_allocations,
     hrp_allocations,
     inverse_vol_allocations,
     volatility_target,
@@ -79,6 +80,19 @@ def test_hrp_allocations_are_causal():
     tampered["b"].iloc[300:] *= 8                                # blow up a sleeve's tail
     after = hrp_allocations(tampered, lookback=60, refit_every=21)
     pd.testing.assert_frame_equal(base.iloc[:300], after.iloc[:300])
+
+
+def test_erc_allocations_warmup_zero_sum_to_one_and_causal():
+    streams = _three_streams(seed=3)
+    alloc = erc_allocations(streams, lookback=60, refit_every=21)
+    assert (alloc.iloc[:60].to_numpy() == 0.0).all()
+    warm = alloc.iloc[60:]
+    assert np.allclose(warm.sum(axis=1).to_numpy(), 1.0)
+    assert (warm.to_numpy() >= 0.0).all()
+    tampered = {k: v.copy() for k, v in streams.items()}
+    tampered["b"].iloc[300:] *= 8
+    after = erc_allocations(tampered, lookback=60, refit_every=21)
+    pd.testing.assert_frame_equal(alloc.iloc[:300], after.iloc[:300])
 
 
 def test_hrp_allocations_blend_is_a_valid_return_stream():

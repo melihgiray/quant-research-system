@@ -17,6 +17,7 @@ import pandas as pd
 
 from ..config import TRADING_DAYS_PER_YEAR
 from .hrp import hrp_weights
+from .risk_budget import erc_weights
 
 
 def combine_weights(weights_by_sleeve: Dict[str, pd.DataFrame],
@@ -126,6 +127,37 @@ def hrp_allocations(sleeve_returns: Dict[str, pd.Series],
                     last = hrp_weights(window)
                 except Exception:
                     pass                                               # keep prior weights on failure
+        if last is not None:
+            alloc.iloc[pos] = last.reindex(frame.columns).fillna(0.0).to_numpy()
+    return alloc
+
+
+def erc_allocations(sleeve_returns: Dict[str, pd.Series],
+                    lookback: int = TRADING_DAYS_PER_YEAR,
+                    refit_every: int = 21,
+                    min_obs: Optional[int] = None) -> pd.DataFrame:
+    """Daily capital allocation across sleeves by equal risk contribution.
+
+    The counterpart to ``inverse_vol_allocations`` and ``hrp_allocations`` that
+    solves for weights whose risk contributions are equal under the full trailing
+    covariance (not just the diagonal), refit every ``refit_every`` days and held
+    between refits. Every row is fit on returns strictly before its day. Rows
+    before ``min_obs`` (defaults to ``lookback``) are zero.
+    """
+    frame = _sleeve_frame(sleeve_returns)
+    min_obs = min_obs or lookback
+    alloc = pd.DataFrame(0.0, index=frame.index, columns=frame.columns)
+    last = None
+    for pos in range(len(frame)):
+        if pos < min_obs:
+            continue
+        if (pos - min_obs) % refit_every == 0:
+            window = frame.iloc[max(0, pos - lookback):pos].dropna()
+            if window.shape[0] >= 20 and window.shape[1] == frame.shape[1]:
+                try:
+                    last = erc_weights(window.cov())
+                except Exception:
+                    pass
         if last is not None:
             alloc.iloc[pos] = last.reindex(frame.columns).fillna(0.0).to_numpy()
     return alloc

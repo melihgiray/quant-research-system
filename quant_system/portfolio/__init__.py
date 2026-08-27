@@ -3,6 +3,7 @@
 from .allocator import (
     blend_returns,
     combine_weights,
+    erc_allocations,
     hrp_allocations,
     inverse_vol_allocations,
     volatility_target,
@@ -23,6 +24,7 @@ from .risk_budget import (
 __all__ = [
     "inverse_vol_allocations",
     "hrp_allocations",
+    "erc_allocations",
     "combine_weights",
     "blend_returns",
     "volatility_target",
