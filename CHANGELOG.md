@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.54.0 - benchmark metrics in the tearsheet (integration)
+
+- `performance/html_report.py` now renders a "Versus benchmark" block, the
+  information ratio, tracking error, and up/down capture ratios (from 0.48 and
+  0.49), whenever a benchmark is supplied. `scripts/build_report.py` already passes
+  the market ETF, so the committed blended-book tearsheet now shows the book
+  against simply holding the market.
+- 1 new test; the committed `docs/results/report.html` is regenerated.
+
 ## 0.53.0 - shrinkage in the allocator comparison (integration)
 
 - `scripts/build_hrp_results.py` now runs Ledoit-Wolf-shrunk variants of HRP and
