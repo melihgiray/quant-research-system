@@ -93,3 +93,19 @@ def treynor_ratio(returns: pd.Series, benchmark: pd.Series,
         return float("nan")
     excess_annual = returns.dropna().mean() * periods - rf_annual
     return float(excess_annual / beta)
+
+
+def downside_beta(returns: pd.Series, benchmark: pd.Series) -> float:
+    """Beta measured only on days the benchmark is below its mean.
+
+    Captures how much the strategy participates in market declines specifically; a
+    defensive strategy wants a downside beta well below its overall beta."""
+    joined = pd.concat([returns.rename("r"), benchmark.rename("b")], axis=1).dropna()
+    down = joined["b"] < joined["b"].mean()
+    if down.sum() < 2:
+        return float("nan")
+    r, b = joined["r"][down], joined["b"][down]
+    var = b.var()
+    if var == 0:
+        return float("nan")
+    return float(r.cov(b) / var)
