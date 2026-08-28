@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.64.0 - rolling max drawdown
+
+- `performance/rolling.py` gains `rolling_max_drawdown`: the worst peak-to-trough
+  drawdown within each trailing window, a rolling companion to the single all-time
+  max drawdown.
+- 3 new tests.
+
 ## 0.63.0 - runs test
 
 - `stats.py` gains `runs_test`: the Wald-Wolfowitz runs test on the sign sequence
