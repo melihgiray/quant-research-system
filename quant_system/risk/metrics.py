@@ -243,3 +243,31 @@ def sterling_ratio(returns: pd.Series, periods: int = 252) -> float:
         return float("nan")
     annualised = growth ** (periods / len(r)) - 1.0
     return float(annualised / avg_dd)
+
+
+def kupiec_pof_test(returns: pd.Series, var: float, level: float = 0.95):
+    """Kupiec proportion-of-failures test for a VaR estimate: returns (LR, p-value).
+
+    ``var`` is a positive loss fraction (a 95% VaR of 0.02 predicts the daily loss
+    exceeds 2% about 5% of the time). This counts how often returns actually
+    breached it and tests, via a likelihood ratio against the chi-squared(1)
+    distribution, whether that breach rate matches the ``1 - level`` it promised. A
+    small p-value means the VaR is miscalibrated (too many or too few breaches)."""
+    from scipy.stats import chi2
+    r = returns.dropna().to_numpy()
+    n = len(r)
+    if n == 0:
+        return float("nan"), float("nan")
+    x = int((r < -abs(var)).sum())                       # number of breaches
+    p = 1.0 - level                                      # promised breach rate
+    pi = x / n
+    if x == 0:
+        lr = -2.0 * n * np.log(1.0 - p)
+    elif x == n:
+        lr = -2.0 * n * np.log(p)
+    else:
+        log_null = (n - x) * np.log(1.0 - p) + x * np.log(p)
+        log_alt = (n - x) * np.log(1.0 - pi) + x * np.log(pi)
+        lr = -2.0 * (log_null - log_alt)
+    pvalue = float(1.0 - chi2.cdf(lr, df=1))
+    return float(lr), pvalue
