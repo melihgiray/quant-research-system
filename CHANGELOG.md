@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.67.0 - Kupiec VaR backtest
+
+- `risk/metrics.py` gains `kupiec_pof_test`: the proportion-of-failures likelihood-
+  ratio test for whether a VaR estimate's actual breach rate matches the rate it
+  promised. A calibrated VaR is not rejected; one that is too optimistic (too many
+  breaches) or too conservative (too few) is.
+- 3 new tests.
+
 ## 0.66.0 - rank information coefficient
 
 - `signals/evaluation.py`: `rank_ic` is the Spearman rank correlation between a
