@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.65.0 - Sterling ratio
+
+- `risk/metrics.py` gains `sterling_ratio`: annualised return over the average
+  drawdown depth, a return/risk ratio that penalises persistent shallow drawdowns
+  rather than only the single worst point (as Calmar does).
+- 3 new tests.
+
 ## 0.64.0 - rolling max drawdown
 
 - `performance/rolling.py` gains `rolling_max_drawdown`: the worst peak-to-trough
