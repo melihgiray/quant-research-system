@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.57.0 - half-life of mean reversion
+
+- `stats.py` gains `half_life`: the Ornstein-Uhlenbeck half-life of a spread,
+  estimated by regressing the change on the lagged level. It recovers the theory
+  on simulated OU processes (faster reversion, shorter half-life) and returns a
+  very large value for a random walk. This is the quantity a pairs trade uses to
+  size a holding period.
+- 3 new tests.
+
 ## 0.56.0 - return diagnostics in the tearsheet (integration)
 
 - `performance/tearsheet.py` now prints a diagnostics block, ulcer index, 95%
