@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.66.0 - rank information coefficient
+
+- `signals/evaluation.py`: `rank_ic` is the Spearman rank correlation between a
+  signal and the returns that follow it, the standard measure of whether a signal
+  has predictive power. +1 ranks outcomes perfectly, 0 is no relationship, negative
+  points the wrong way.
+- 3 new tests.
+
 ## 0.65.0 - Sterling ratio
 
 - `risk/metrics.py` gains `sterling_ratio`: annualised return over the average
