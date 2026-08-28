@@ -128,3 +128,17 @@ def test_faster_reversion_has_shorter_half_life():
 def test_random_walk_half_life_is_large():
     from quant_system.stats import half_life
     assert half_life(_random_walk(n=50000)) > 200
+
+
+def test_jarque_bera_does_not_reject_normal_data():
+    from quant_system.stats import jarque_bera
+    normal = np.random.default_rng(0).normal(0, 1, 5000)
+    _, p = jarque_bera(normal)
+    assert p > 0.05                                   # fail to reject normality
+
+
+def test_jarque_bera_rejects_fat_tails():
+    from quant_system.stats import jarque_bera
+    fat = np.random.default_rng(1).standard_t(3, 5000)
+    _, p = jarque_bera(fat)
+    assert p < 0.01                                   # reject normality

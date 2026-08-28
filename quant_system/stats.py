@@ -122,3 +122,18 @@ def sadf(series, min_window: int = 40, stride: int = 3) -> np.ndarray:
         if np.isfinite(best):
             out[t] = best
     return out
+
+
+def jarque_bera(returns):
+    """Jarque-Bera test of normality: returns (statistic, p-value).
+
+    Combines skewness and excess kurtosis into a single statistic. A small p-value
+    rejects normality, which for returns usually means fat tails or skew, exactly
+    the shape that makes Gaussian VaR understate risk."""
+    from scipy.stats import jarque_bera as _jb
+    x = np.asarray(returns, dtype=float)
+    x = x[np.isfinite(x)]
+    if len(x) < 2:
+        return float("nan"), float("nan")
+    result = _jb(x)
+    return float(result.statistic), float(result.pvalue)
