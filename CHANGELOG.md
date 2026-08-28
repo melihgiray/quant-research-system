@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.61.0 - Jarque-Bera normality test
+
+- `stats.py` gains `jarque_bera`, wrapping the skewness-and-kurtosis normality test
+  and returning (statistic, p-value). Normal data fails to reject; fat-tailed data
+  rejects, the shape that makes Gaussian VaR understate risk.
+- 2 new tests.
+
 ## 0.60.0 - downside beta
 
 - `performance/active.py` gains `downside_beta`: beta measured only on days the
