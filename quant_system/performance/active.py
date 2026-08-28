@@ -79,3 +79,17 @@ def alpha_beta(returns: pd.Series, benchmark: pd.Series,
     beta = float(r.cov(b) / var)
     alpha = float((r.mean() - beta * b.mean()) * periods)
     return alpha, beta
+
+
+def treynor_ratio(returns: pd.Series, benchmark: pd.Series,
+                  periods: int = TRADING_DAYS_PER_YEAR, rf_annual: float = 0.0) -> float:
+    """Annualised excess return per unit of market beta (Treynor).
+
+    Like the Sharpe ratio but dividing by systematic risk (beta) instead of total
+    volatility, so it rewards return earned above what the market exposure alone
+    would give. A levered version of the same book has the same Treynor."""
+    _, beta = alpha_beta(returns, benchmark, periods, rf_annual)
+    if not np.isfinite(beta) or beta == 0:
+        return float("nan")
+    excess_annual = returns.dropna().mean() * periods - rf_annual
+    return float(excess_annual / beta)
