@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.60.0 - downside beta
+
+- `performance/active.py` gains `downside_beta`: beta measured only on days the
+  benchmark is below its mean, isolating how much a strategy participates in market
+  declines. A defensive book has a downside beta below its overall beta.
+- 2 new tests.
+
 ## 0.59.0 - Treynor ratio
 
 - `performance/active.py` gains `treynor_ratio`: annualised excess return per unit
