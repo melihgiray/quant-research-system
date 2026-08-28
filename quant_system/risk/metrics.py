@@ -225,3 +225,21 @@ def max_drawdown_duration(returns: pd.Series) -> int:
         current = current + 1 if flag else 0
         longest = max(longest, current)
     return int(longest)
+
+
+def sterling_ratio(returns: pd.Series, periods: int = 252) -> float:
+    """Annualised return divided by the average drawdown depth.
+
+    A return/risk ratio that uses the mean of the whole underwater curve as the
+    risk measure, so persistent shallow drawdowns are penalised, not just the one
+    worst point (as in Calmar). Undefined when the series never drew down."""
+    r = returns.dropna()
+    dd = drawdown_series(returns)
+    avg_dd = -dd.mean()
+    if r.empty or avg_dd <= 0:
+        return float("nan")
+    growth = float((1.0 + r).prod())
+    if growth <= 0:
+        return float("nan")
+    annualised = growth ** (periods / len(r)) - 1.0
+    return float(annualised / avg_dd)
