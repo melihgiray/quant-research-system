@@ -137,3 +137,18 @@ def jarque_bera(returns):
         return float("nan"), float("nan")
     result = _jb(x)
     return float(result.statistic), float(result.pvalue)
+
+
+def ljung_box(returns, lags: int = 10):
+    """Ljung-Box portmanteau test for autocorrelation up to ``lags``.
+
+    Returns (statistic, p-value). A small p-value means the series has significant
+    autocorrelation somewhere in the first ``lags`` lags, evidence it is not white
+    noise. Complements the single-lag `autocorrelation` by testing them jointly."""
+    import pandas as pd
+    from statsmodels.stats.diagnostic import acorr_ljungbox
+    x = pd.Series(np.asarray(returns, dtype=float)).dropna()
+    if len(x) <= lags:
+        return float("nan"), float("nan")
+    res = acorr_ljungbox(x, lags=[lags], return_df=True)
+    return float(res["lb_stat"].iloc[-1]), float(res["lb_pvalue"].iloc[-1])

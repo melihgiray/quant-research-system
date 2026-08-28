@@ -142,3 +142,16 @@ def test_jarque_bera_rejects_fat_tails():
     fat = np.random.default_rng(1).standard_t(3, 5000)
     _, p = jarque_bera(fat)
     assert p < 0.01                                   # reject normality
+
+
+def test_ljung_box_does_not_reject_white_noise():
+    from quant_system.stats import ljung_box
+    noise = np.random.default_rng(0).normal(0, 1, 3000)
+    _, p = ljung_box(noise, lags=10)
+    assert p > 0.05
+
+
+def test_ljung_box_rejects_autocorrelated_series():
+    from quant_system.stats import ljung_box
+    _, p = ljung_box(_ar1(0.5, n=3000), lags=10)
+    assert p < 0.01
