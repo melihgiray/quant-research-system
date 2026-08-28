@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.63.0 - runs test
+
+- `stats.py` gains `runs_test`: the Wald-Wolfowitz runs test on the sign sequence
+  (z, p-value). Random signs fail to reject; long streaks (too few runs) or
+  over-alternation (too many) push the p-value down.
+- 2 new tests.
+
 ## 0.62.0 - Ljung-Box test
 
 - `stats.py` gains `ljung_box`, the portmanteau test for autocorrelation up to a
