@@ -82,3 +82,17 @@ def rolling_sortino(returns: pd.Series,
     downside = returns.where(returns < 0, 0.0)
     downside_dev = np.sqrt((downside ** 2).rolling(window).mean())
     return (mean / downside_dev) * np.sqrt(periods)
+
+
+def rolling_max_drawdown(returns: pd.Series, window: int = 126) -> pd.Series:
+    """Worst peak-to-trough drawdown within each trailing ``window`` of returns.
+
+    A rolling read on how bad the last window's decline got, unlike the single
+    all-time max drawdown. The first ``window - 1`` values are NaN."""
+    equity = (1.0 + returns.fillna(0.0)).cumprod()
+
+    def _mdd(x):
+        peak = np.maximum.accumulate(x)
+        return (x / peak - 1.0).min()
+
+    return equity.rolling(window).apply(_mdd, raw=True)
