@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.62.0 - Ljung-Box test
+
+- `stats.py` gains `ljung_box`, the portmanteau test for autocorrelation up to a
+  lag (statistic, p-value). White noise fails to reject; an AR series rejects. It
+  tests the first lags jointly, complementing the single-lag autocorrelation.
+- 2 new tests.
+
 ## 0.61.0 - Jarque-Bera normality test
 
 - `stats.py` gains `jarque_bera`, wrapping the skewness-and-kurtosis normality test
