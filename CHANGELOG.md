@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.59.0 - Treynor ratio
+
+- `performance/active.py` gains `treynor_ratio`: annualised excess return per unit
+  of market beta, the systematic-risk analogue of the Sharpe ratio.
+- 3 new tests.
+
 ## 0.58.0 - CAPM alpha and beta
 
 - `performance/active.py` gains `alpha_beta`: annualised alpha and beta from a
