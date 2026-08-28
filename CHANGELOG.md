@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.58.0 - CAPM alpha and beta
+
+- `performance/active.py` gains `alpha_beta`: annualised alpha and beta from a
+  regression of returns on a benchmark, the return left over once market exposure
+  is priced out.
+- 3 new tests.
+
 ## 0.57.0 - half-life of mean reversion
 
 - `stats.py` gains `half_life`: the Ornstein-Uhlenbeck half-life of a spread,
