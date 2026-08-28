@@ -59,3 +59,23 @@ def capture_ratios(returns: pd.Series, benchmark: pd.Series):
         return float(r[mask].mean() / b[mask].mean())
 
     return ratio(up), ratio(down)
+
+
+def alpha_beta(returns: pd.Series, benchmark: pd.Series,
+               periods: int = TRADING_DAYS_PER_YEAR, rf_annual: float = 0.0):
+    """(annualised alpha, beta) from a CAPM regression of returns on the benchmark.
+
+    Beta is the sensitivity to the benchmark; alpha is the annualised return left
+    over once that market exposure is priced out, the part not explained by simply
+    holding beta of the benchmark."""
+    joined = pd.concat([returns.rename("r"), benchmark.rename("b")], axis=1).dropna()
+    if len(joined) < 2:
+        return float("nan"), float("nan")
+    r = joined["r"] - rf_annual / periods
+    b = joined["b"] - rf_annual / periods
+    var = b.var()
+    if var == 0:
+        return float("nan"), float("nan")
+    beta = float(r.cov(b) / var)
+    alpha = float((r.mean() - beta * b.mean()) * periods)
+    return alpha, beta
