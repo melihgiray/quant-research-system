@@ -155,3 +155,17 @@ def test_ljung_box_rejects_autocorrelated_series():
     from quant_system.stats import ljung_box
     _, p = ljung_box(_ar1(0.5, n=3000), lags=10)
     assert p < 0.01
+
+
+def test_runs_test_passes_random_signs():
+    from quant_system.stats import runs_test
+    r = np.random.default_rng(0).normal(0, 1, 5000)
+    _, p = runs_test(r)
+    assert p > 0.05
+
+
+def test_runs_test_flags_long_streaks():
+    from quant_system.stats import runs_test
+    trend = np.concatenate([np.ones(500), -np.ones(500), np.ones(500)])   # few long runs
+    z, p = runs_test(trend)
+    assert p < 0.01 and z < 0                          # far fewer runs than random

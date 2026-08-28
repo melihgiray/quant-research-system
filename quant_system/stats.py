@@ -152,3 +152,28 @@ def ljung_box(returns, lags: int = 10):
         return float("nan"), float("nan")
     res = acorr_ljungbox(x, lags=[lags], return_df=True)
     return float(res["lb_stat"].iloc[-1]), float(res["lb_pvalue"].iloc[-1])
+
+
+def runs_test(returns):
+    """Wald-Wolfowitz runs test on the sign sequence: returns (z, p-value).
+
+    Counts runs of consecutive same-sign returns and compares to the number
+    expected if signs were independent. Too few runs (long streaks) or too many
+    (over-alternation) both push the p-value down, so a small p-value is evidence
+    the sign sequence is not random."""
+    from scipy.stats import norm
+    x = np.asarray(returns, dtype=float)
+    signs = x[x != 0] > 0
+    n1 = int(signs.sum())
+    n2 = int(len(signs) - n1)
+    n = n1 + n2
+    if n1 == 0 or n2 == 0 or n < 2:
+        return float("nan"), float("nan")
+    runs = 1 + int(np.sum(signs[1:] != signs[:-1]))
+    expected = 1 + 2 * n1 * n2 / n
+    variance = 2 * n1 * n2 * (2 * n1 * n2 - n) / (n ** 2 * (n - 1))
+    if variance <= 0:
+        return float("nan"), float("nan")
+    z = (runs - expected) / np.sqrt(variance)
+    p = 2 * (1 - norm.cdf(abs(z)))
+    return float(z), float(p)
