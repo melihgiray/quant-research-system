@@ -105,3 +105,26 @@ def test_sadf_warmup_is_nan():
     out = sadf(_random_walk(n=200), min_window=40)
     assert np.isnan(out[:80]).all()
     assert len(out) == 200
+
+
+def _ou(kappa, n=50000, seed=9):
+    rng = np.random.default_rng(seed)
+    s = np.zeros(n)
+    for i in range(1, n):
+        s[i] = (1 - kappa) * s[i - 1] + rng.normal(0, 1)
+    return s
+
+
+def test_half_life_recovers_the_ou_theory():
+    from quant_system.stats import half_life
+    assert abs(half_life(_ou(0.1)) - np.log(2) / 0.1) < 1.0
+
+
+def test_faster_reversion_has_shorter_half_life():
+    from quant_system.stats import half_life
+    assert half_life(_ou(0.3)) < half_life(_ou(0.1)) < half_life(_ou(0.05))
+
+
+def test_random_walk_half_life_is_large():
+    from quant_system.stats import half_life
+    assert half_life(_random_walk(n=50000)) > 200

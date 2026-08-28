@@ -63,6 +63,26 @@ def autocorrelation(series, lag: int = 1) -> float:
     return float(c_lag / c0)
 
 
+def half_life(spread) -> float:
+    """Half-life of mean reversion (in bars) from an Ornstein-Uhlenbeck fit.
+
+    Regress the change in the spread on its lagged level, ``ds = a + b * s_{t-1}``;
+    a mean-reverting spread has ``b < 0`` and reverts halfway to its mean in
+    ``-ln(2) / b`` bars. This is what a pairs trade uses to size a holding period.
+    Returns inf when the series does not mean-revert (``b >= 0``).
+    """
+    s = np.asarray(spread, dtype=float)
+    if len(s) < 3:
+        return float("nan")
+    ds = np.diff(s)
+    lagged = s[:-1]
+    design = np.column_stack([np.ones_like(lagged), lagged])
+    b = np.linalg.lstsq(design, ds, rcond=None)[0][1]
+    if b >= 0:
+        return float("inf")
+    return float(-np.log(2) / b)
+
+
 def _dickey_fuller_stat(y: np.ndarray) -> float:
     """t-statistic on the lagged level in a Dickey-Fuller regression of dy on y_{t-1}.
 
