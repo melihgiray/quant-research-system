@@ -49,3 +49,19 @@ def test_risk_contributions_sum_to_one():
     cov = np.array([[0.04, 0.01], [0.01, 0.09]])
     rc = risk_contributions(cov, [0.6, 0.4])
     assert rc.sum() == pytest.approx(1.0)
+
+
+def test_minimum_variance_prefers_the_lower_variance_asset():
+    from quant_system.portfolio.risk_budget import minimum_variance_weights
+    cov = pd.DataFrame([[0.04, 0.0], [0.0, 0.01]], columns=["A", "B"], index=["A", "B"])
+    weights = minimum_variance_weights(cov)
+    assert weights["B"] > weights["A"]
+    assert np.isclose(weights.sum(), 1.0)
+
+
+def test_minimum_variance_beats_equal_weight_on_its_input_covariance():
+    from quant_system.portfolio.risk_budget import minimum_variance_weights
+    cov = np.array([[0.04, 0.01], [0.01, 0.01]])
+    weights = minimum_variance_weights(cov)
+    equal = np.array([0.5, 0.5])
+    assert weights @ cov @ weights <= equal @ cov @ equal

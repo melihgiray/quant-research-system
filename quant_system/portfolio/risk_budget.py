@@ -87,3 +87,21 @@ def max_diversification_weights(cov):
     weights = np.clip(result.x, 0.0, None)
     weights = weights / weights.sum()
     return _labelled(weights, labels)
+
+
+def minimum_variance_weights(cov):
+    """Long-only fully invested weights with minimum estimated variance.
+
+    This is a baseline for HRP and ERC. It makes no return forecast: it asks
+    only which feasible mix has the lowest risk under the supplied covariance.
+    """
+    matrix, labels = _as_matrix(cov)
+    n = len(matrix)
+    result = minimize(lambda w: float(w @ matrix @ w), np.full(n, 1.0 / n),
+                      method="SLSQP", bounds=[(0.0, 1.0)] * n,
+                      constraints=[{"type": "eq", "fun": lambda w: w.sum() - 1.0}],
+                      options={"ftol": 1e-12, "maxiter": 1_000})
+    if not result.success:
+        raise RuntimeError(f"minimum-variance optimisation failed: {result.message}")
+    weights = np.clip(result.x, 0.0, None)
+    return _labelled(weights / weights.sum(), labels)

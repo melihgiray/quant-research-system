@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.75.0
+
+- Added a long-only minimum-variance allocator as a baseline for the existing
+  HRP, inverse-variance, ERC, and maximum-diversification allocators.
+
 ## 0.74.0
 
 - Added a Hill tail-threshold stability table. A tail estimate that changes

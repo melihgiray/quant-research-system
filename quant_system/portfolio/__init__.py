@@ -18,6 +18,7 @@ from .hrp import (
 from .risk_budget import (
     erc_weights,
     max_diversification_weights,
+    minimum_variance_weights,
     risk_contributions,
 )
 
@@ -35,5 +36,6 @@ __all__ = [
     "recursive_bisection",
     "erc_weights",
     "max_diversification_weights",
+    "minimum_variance_weights",
     "risk_contributions",
 ]
