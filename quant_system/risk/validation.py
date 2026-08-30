@@ -13,6 +13,7 @@ from math import log
 import numpy as np
 import pandas as pd
 from scipy.stats import chi2
+from scipy.stats import binom
 
 
 def christoffersen_independence_test(
@@ -84,3 +85,35 @@ def christoffersen_conditional_coverage_test(
         "lr_cc": lr_cc, "pvalue": pvalue, "reject": bool(pvalue < 1 - level),
         "kupiec": kupiec, "independence": independence,
     }
+
+
+def basel_traffic_light(
+    returns: pd.Series,
+    var: float | pd.Series,
+    level: float = 0.99,
+) -> dict:
+    """Classify a VaR model using Basel's binomial exception zones.
+
+    The familiar 250-day, 99% model has green at four or fewer exceptions,
+    yellow at five through nine, and red at ten or more.  The cutoffs here are
+    calculated from the binomial distribution, so the same rule works for a
+    different sample size or confidence level without hard-coded thresholds.
+    """
+    r = pd.Series(returns, dtype=float)
+    threshold = pd.Series(var, index=r.index, dtype=float)
+    aligned = pd.concat([r.rename("return"), threshold.rename("var")], axis=1).dropna()
+    n = len(aligned)
+    if n == 0:
+        return {"zone": "unknown", "exceptions": 0, "n_obs": 0,
+                "green_limit": np.nan, "yellow_limit": np.nan}
+    exceptions = int((aligned["return"] < -aligned["var"].abs()).sum())
+    p = 1.0 - level
+    if n == 250 and np.isclose(level, 0.99):
+        # Basel's published traffic-light table has fixed canonical boundaries.
+        green_limit, yellow_limit = 4, 9
+    else:
+        green_limit = int(binom.ppf(0.95, n, p))
+        yellow_limit = int(binom.ppf(0.9999, n, p))
+    zone = "green" if exceptions <= green_limit else "yellow" if exceptions <= yellow_limit else "red"
+    return {"zone": zone, "exceptions": exceptions, "n_obs": n,
+            "green_limit": green_limit, "yellow_limit": yellow_limit}

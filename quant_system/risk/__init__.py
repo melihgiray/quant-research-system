@@ -5,6 +5,7 @@ from .limits import apply_drawdown_stop, cap_concentration, check_limits
 from .validation import (
     christoffersen_independence_test,
     christoffersen_conditional_coverage_test,
+    basel_traffic_light,
 )
 from .metrics import (
     historical_var,
@@ -24,6 +25,7 @@ __all__ = [
     "check_limits",
     "christoffersen_independence_test",
     "christoffersen_conditional_coverage_test",
+    "basel_traffic_light",
     "historical_var",
     "conditional_var",
     "parametric_var",

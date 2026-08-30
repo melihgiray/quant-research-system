@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.69.0
+
+- Added Basel traffic-light classification for VaR exceptions. The canonical
+  250-day, 99% limits are preserved, while other horizons use binomial cutoffs.
+
 ## 0.68.0
 
 - Added Christoffersen independence and conditional-coverage backtests for

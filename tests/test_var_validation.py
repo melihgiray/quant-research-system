@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 
 from quant_system.risk.validation import (
+    basel_traffic_light,
     christoffersen_conditional_coverage_test,
     christoffersen_independence_test,
 )
@@ -40,3 +41,19 @@ def test_conditional_coverage_combines_the_two_tests():
 def test_short_input_is_graceful():
     result = christoffersen_independence_test(pd.Series([-0.01]), var=0.02)
     assert np.isnan(result["lr_ind"])
+
+
+def test_basel_traffic_light_matches_the_familiar_250_day_cutoffs():
+    r = pd.Series(np.zeros(250))
+    assert basel_traffic_light(r, var=0.01)["green_limit"] == 4
+    r.iloc[:5] = -0.02
+    assert basel_traffic_light(r, var=0.01)["zone"] == "yellow"
+    r.iloc[:10] = -0.02
+    assert basel_traffic_light(r, var=0.01)["zone"] == "red"
+
+
+def test_basel_traffic_light_handles_a_daily_var_series():
+    r = pd.Series([0.0, -0.03, 0.0])
+    result = basel_traffic_light(r, pd.Series([0.01, 0.02, 0.01]), level=0.95)
+    assert result["exceptions"] == 1
+    assert result["n_obs"] == 3
