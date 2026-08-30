@@ -169,3 +169,21 @@ def test_runs_test_flags_long_streaks():
     trend = np.concatenate([np.ones(500), -np.ones(500), np.ones(500)])   # few long runs
     z, p = runs_test(trend)
     assert p < 0.01 and z < 0                          # far fewer runs than random
+
+
+def test_arch_lm_does_not_reject_iid_noise():
+    from quant_system.stats import arch_lm
+    rng = np.random.default_rng(14)
+    stat, pvalue = arch_lm(rng.normal(size=3_000), lags=5)
+    assert stat >= 0
+    assert pvalue > 0.05
+
+
+def test_arch_lm_rejects_an_arch_process():
+    from quant_system.stats import arch_lm
+    rng = np.random.default_rng(15)
+    x = np.zeros(3_000)
+    for t in range(1, len(x)):
+        x[t] = rng.normal(scale=np.sqrt(0.1 + 0.8 * x[t - 1] ** 2))
+    _, pvalue = arch_lm(x, lags=5)
+    assert pvalue < 0.01

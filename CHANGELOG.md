@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.70.0
+
+- Added Engle's ARCH-LM diagnostic for volatility clustering. It tests whether
+  squared returns retain serial dependence, a warning against constant-vol
+  assumptions in a risk model.
+
 ## 0.69.0
 
 - Added Basel traffic-light classification for VaR exceptions. The canonical

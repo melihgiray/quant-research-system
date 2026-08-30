@@ -177,3 +177,19 @@ def runs_test(returns):
     z = (runs - expected) / np.sqrt(variance)
     p = 2 * (1 - norm.cdf(abs(z)))
     return float(z), float(p)
+
+
+def arch_lm(returns, lags: int = 5):
+    """Engle's ARCH-LM test for conditional heteroskedasticity.
+
+    A small p-value says squared returns are serially dependent: volatility
+    clusters, so a constant-volatility risk estimate is misspecified.
+    """
+    import pandas as pd
+    from statsmodels.stats.diagnostic import het_arch
+
+    x = pd.Series(np.asarray(returns, dtype=float)).dropna()
+    if len(x) <= 2 * lags:
+        return float("nan"), float("nan")
+    stat, pvalue, _, _ = het_arch(x, nlags=lags)
+    return float(stat), float(pvalue)
