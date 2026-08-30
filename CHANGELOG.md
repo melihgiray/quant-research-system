@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.73.0
+
+- Added a Hill estimator for the lower-return tail exponent, alongside the
+  existing GPD estimate. It reports a local tail diagnostic rather than fitting
+  one distribution to the whole return series.
+
 ## 0.72.0
 
 - Added a KPSS stationarity diagnostic. Its stationarity null complements the

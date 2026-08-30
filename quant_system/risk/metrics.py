@@ -95,6 +95,35 @@ class EVTTail:
     n_exceedances: int
 
 
+@dataclass
+class HillTail:
+    """Hill estimate of the lower-return tail exponent."""
+
+    alpha: float
+    threshold: float
+    n_exceedances: int
+
+
+def hill_tail_index(returns: pd.Series, tail_fraction: float = 0.05) -> HillTail:
+    """Estimate a Pareto loss-tail exponent using the Hill estimator.
+
+    Smaller ``alpha`` means a heavier tail. The estimate is only a local tail
+    description, not a claim that every loss follows one Pareto law.
+    """
+    if not 0 < tail_fraction < 1:
+        raise ValueError("tail_fraction must be in (0, 1)")
+    losses = -pd.Series(returns, dtype=float).dropna().to_numpy()
+    losses = np.sort(losses[losses > 0])
+    k = int(np.floor(tail_fraction * len(losses)))
+    if k < 2:
+        return HillTail(float("nan"), float("nan"), k)
+    tail = losses[-k:]
+    threshold = float(losses[-k - 1]) if len(losses) > k else float(tail[0])
+    logs = np.log(tail / threshold)
+    alpha = float(1.0 / logs.mean()) if logs.mean() > 0 else float("inf")
+    return HillTail(alpha, threshold, k)
+
+
 def evt_tail(returns: pd.Series,
              level: float = 0.99,
              threshold_quantile: float = 0.90) -> EVTTail:

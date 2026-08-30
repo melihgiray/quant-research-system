@@ -76,3 +76,19 @@ def test_tearsheet_surfaces_return_diagnostics():
     text = format_tearsheet(r, title="DIAG")
     for label in ("Ulcer index", "CDaR", "Omega", "Tail ratio", "Hurst exponent"):
         assert label in text
+
+
+def test_hill_tail_recovers_a_pareto_exponent():
+    from quant_system.risk.metrics import hill_tail_index
+    rng = np.random.default_rng(22)
+    alpha = 3.0
+    losses = rng.pareto(alpha, 50_000) + 1.0
+    result = hill_tail_index(pd.Series(-losses), tail_fraction=0.05)
+    assert result.n_exceedances == 2_500
+    assert result.alpha == pytest.approx(alpha, rel=0.15)
+
+
+def test_hill_tail_rejects_invalid_fraction():
+    from quant_system.risk.metrics import hill_tail_index
+    with pytest.raises(ValueError):
+        hill_tail_index(pd.Series([-0.01, -0.02]), tail_fraction=1.0)
