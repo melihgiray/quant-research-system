@@ -124,6 +124,20 @@ def hill_tail_index(returns: pd.Series, tail_fraction: float = 0.05) -> HillTail
     return HillTail(alpha, threshold, k)
 
 
+def hill_tail_stability(returns: pd.Series, fractions=(0.02, 0.05, 0.10)) -> pd.DataFrame:
+    """Show how the Hill estimate changes as the tail threshold moves.
+
+    A tail index that changes sharply with the chosen fraction is an unstable
+    estimate and should not be quoted as a precise property of the strategy.
+    """
+    rows = []
+    for fraction in fractions:
+        result = hill_tail_index(returns, float(fraction))
+        rows.append({"tail_fraction": float(fraction), "alpha": result.alpha,
+                     "threshold": result.threshold, "n_exceedances": result.n_exceedances})
+    return pd.DataFrame(rows)
+
+
 def evt_tail(returns: pd.Series,
              level: float = 0.99,
              threshold_quantile: float = 0.90) -> EVTTail:

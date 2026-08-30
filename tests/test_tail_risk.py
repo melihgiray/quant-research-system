@@ -92,3 +92,12 @@ def test_hill_tail_rejects_invalid_fraction():
     from quant_system.risk.metrics import hill_tail_index
     with pytest.raises(ValueError):
         hill_tail_index(pd.Series([-0.01, -0.02]), tail_fraction=1.0)
+
+
+def test_hill_tail_stability_reports_every_requested_threshold():
+    from quant_system.risk.metrics import hill_tail_stability
+    r = pd.Series(-(np.random.default_rng(23).pareto(3.0, 10_000) + 1.0))
+    table = hill_tail_stability(r, fractions=(0.02, 0.05, 0.10))
+    assert table["tail_fraction"].tolist() == [0.02, 0.05, 0.10]
+    assert table["n_exceedances"].tolist() == [200, 500, 1_000]
+    assert table["alpha"].between(2.0, 4.0).all()
