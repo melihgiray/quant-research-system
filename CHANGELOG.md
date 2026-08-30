@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.74.0
+
+- Added a Hill tail-threshold stability table. A tail estimate that changes
+  sharply across plausible cutoffs is reported as unstable rather than precise.
+
 ## 0.73.0
 
 - Added a Hill estimator for the lower-return tail exponent, alongside the
