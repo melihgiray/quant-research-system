@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.76.0
+
+- Added the Engle-Manganelli dynamic-quantile test for VaR adequacy. It checks
+  whether exceptions retain predictable structure after accounting for the VaR
+  forecast, beyond their unconditional frequency.
+
 ## 0.75.0
 
 - Added a long-only minimum-variance allocator as a baseline for the existing

@@ -117,3 +117,38 @@ def basel_traffic_light(
     zone = "green" if exceptions <= green_limit else "yellow" if exceptions <= yellow_limit else "red"
     return {"zone": zone, "exceptions": exceptions, "n_obs": n,
             "green_limit": green_limit, "yellow_limit": yellow_limit}
+
+
+def dynamic_quantile_test(
+    returns: pd.Series,
+    var: float | pd.Series,
+    level: float = 0.95,
+    lags: int = 4,
+) -> dict:
+    """Engle-Manganelli dynamic-quantile test for VaR forecast adequacy.
+
+    The regression asks whether centred exception hits can be predicted by their
+    own recent history or by the forecast threshold. A calibrated VaR forecast
+    should leave neither relationship behind. The DQ statistic is ``n x R^2``.
+    """
+    if lags < 1:
+        raise ValueError("lags must be positive")
+    r = pd.Series(returns, dtype=float)
+    threshold = pd.Series(var, index=r.index, dtype=float)
+    df = pd.concat([r.rename("return"), threshold.rename("var")], axis=1).dropna()
+    hits = (df["return"] < -df["var"].abs()).astype(float) - (1.0 - level)
+    if len(hits) <= lags + 5:
+        return {"dq": np.nan, "pvalue": np.nan, "reject": False, "n_obs": 0}
+    design = [np.ones(len(hits) - lags), df["var"].iloc[lags:].to_numpy()]
+    for lag in range(1, lags + 1):
+        design.append(hits.shift(lag).iloc[lags:].to_numpy())
+    x = np.column_stack(design)
+    y = hits.iloc[lags:].to_numpy()
+    beta, *_ = np.linalg.lstsq(x, y, rcond=None)
+    fitted = x @ beta
+    ss_total = float(np.sum((y - y.mean()) ** 2))
+    r2 = 0.0 if ss_total == 0 else max(0.0, 1.0 - float(np.sum((y - fitted) ** 2)) / ss_total)
+    dq = float(len(y) * r2)
+    pvalue = float(chi2.sf(dq, df=x.shape[1]))
+    return {"dq": dq, "pvalue": pvalue, "reject": bool(pvalue < 1 - level),
+            "n_obs": int(len(y)), "n_regressors": int(x.shape[1])}

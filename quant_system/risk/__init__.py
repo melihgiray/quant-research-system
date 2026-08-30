@@ -6,6 +6,7 @@ from .validation import (
     christoffersen_independence_test,
     christoffersen_conditional_coverage_test,
     basel_traffic_light,
+    dynamic_quantile_test,
 )
 from .metrics import (
     historical_var,
@@ -26,6 +27,7 @@ __all__ = [
     "christoffersen_independence_test",
     "christoffersen_conditional_coverage_test",
     "basel_traffic_light",
+    "dynamic_quantile_test",
     "historical_var",
     "conditional_var",
     "parametric_var",

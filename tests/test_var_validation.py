@@ -5,6 +5,7 @@ import pandas as pd
 
 from quant_system.risk.validation import (
     basel_traffic_light,
+    dynamic_quantile_test,
     christoffersen_conditional_coverage_test,
     christoffersen_independence_test,
 )
@@ -57,3 +58,19 @@ def test_basel_traffic_light_handles_a_daily_var_series():
     result = basel_traffic_light(r, pd.Series([0.01, 0.02, 0.01]), level=0.95)
     assert result["exceptions"] == 1
     assert result["n_obs"] == 3
+
+
+def test_dynamic_quantile_accepts_iid_exception_hits():
+    rng = np.random.default_rng(31)
+    r = pd.Series(np.where(rng.random(10_000) < 0.05, -0.02, 0.0))
+    result = dynamic_quantile_test(r, var=0.01, level=0.95)
+    assert result["n_obs"] == 9_996
+    assert result["reject"] is False
+
+
+def test_dynamic_quantile_rejects_clustered_hits():
+    r = pd.Series(np.zeros(2_000))
+    for start in range(0, 2_000, 100):
+        r.iloc[start:start + 5] = -0.02
+    result = dynamic_quantile_test(r, var=0.01, level=0.95)
+    assert result["reject"] is True
