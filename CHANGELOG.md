@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.68.0
+
+- Added Christoffersen independence and conditional-coverage backtests for
+  Value-at-Risk forecasts. Kupiec's test only checks exception frequency;
+  these tests also flag exceptions that cluster through a drawdown.
+
 ## 0.67.0 - Kupiec VaR backtest
 
 - `risk/metrics.py` gains `kupiec_pof_test`: the proportion-of-failures likelihood-

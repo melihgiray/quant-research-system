@@ -2,6 +2,10 @@
 
 from .sizing import fixed_fractional, vol_target_scale, kelly_weights
 from .limits import apply_drawdown_stop, cap_concentration, check_limits
+from .validation import (
+    christoffersen_independence_test,
+    christoffersen_conditional_coverage_test,
+)
 from .metrics import (
     historical_var,
     conditional_var,
@@ -18,6 +22,8 @@ __all__ = [
     "apply_drawdown_stop",
     "cap_concentration",
     "check_limits",
+    "christoffersen_independence_test",
+    "christoffersen_conditional_coverage_test",
     "historical_var",
     "conditional_var",
     "parametric_var",
