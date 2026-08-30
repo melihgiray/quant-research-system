@@ -187,3 +187,15 @@ def test_arch_lm_rejects_an_arch_process():
         x[t] = rng.normal(scale=np.sqrt(0.1 + 0.8 * x[t - 1] ** 2))
     _, pvalue = arch_lm(x, lags=5)
     assert pvalue < 0.01
+
+
+def test_adf_rejects_a_stationary_ar_process():
+    from quant_system.stats import adf_test
+    _, pvalue = adf_test(_ar1(0.6, n=2_000))
+    assert pvalue < 0.01
+
+
+def test_adf_does_not_reject_a_random_walk():
+    from quant_system.stats import adf_test
+    _, pvalue = adf_test(_random_walk(n=2_000))
+    assert pvalue > 0.05

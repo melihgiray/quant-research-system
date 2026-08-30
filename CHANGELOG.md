@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.71.0
+
+- Added an Augmented Dickey-Fuller unit-root diagnostic for separating a
+  stationary series from a random-walk-like level process.
+
 ## 0.70.0
 
 - Added Engle's ARCH-LM diagnostic for volatility clustering. It tests whether

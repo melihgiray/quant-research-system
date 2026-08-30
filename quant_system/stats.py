@@ -193,3 +193,19 @@ def arch_lm(returns, lags: int = 5):
         return float("nan"), float("nan")
     stat, pvalue, _, _ = het_arch(x, nlags=lags)
     return float(stat), float(pvalue)
+
+
+def adf_test(series, regression: str = "c"):
+    """Augmented Dickey-Fuller unit-root test: returns statistic and p-value.
+
+    A small p-value rejects a unit root, which is evidence the observed series is
+    stationary around the requested deterministic term.
+    """
+    import pandas as pd
+    from statsmodels.tsa.stattools import adfuller
+
+    x = pd.Series(np.asarray(series, dtype=float)).dropna()
+    if len(x) < 20 or x.nunique() < 2:
+        return float("nan"), float("nan")
+    stat, pvalue, *_ = adfuller(x, regression=regression, autolag="AIC")
+    return float(stat), float(pvalue)
