@@ -199,3 +199,15 @@ def test_adf_does_not_reject_a_random_walk():
     from quant_system.stats import adf_test
     _, pvalue = adf_test(_random_walk(n=2_000))
     assert pvalue > 0.05
+
+
+def test_kpss_does_not_reject_a_stationary_ar_process():
+    from quant_system.stats import kpss_test
+    _, pvalue = kpss_test(_ar1(0.6, n=2_000))
+    assert pvalue > 0.05
+
+
+def test_kpss_rejects_a_random_walk():
+    from quant_system.stats import kpss_test
+    _, pvalue = kpss_test(_random_walk(n=2_000))
+    assert pvalue < 0.05

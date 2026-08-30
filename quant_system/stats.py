@@ -209,3 +209,19 @@ def adf_test(series, regression: str = "c"):
         return float("nan"), float("nan")
     stat, pvalue, *_ = adfuller(x, regression=regression, autolag="AIC")
     return float(stat), float(pvalue)
+
+
+def kpss_test(series, regression: str = "c"):
+    """KPSS stationarity test: returns statistic and p-value.
+
+    KPSS reverses the ADF null hypothesis: a small p-value rejects stationarity.
+    Reporting both prevents treating one weak unit-root test as a verdict.
+    """
+    import pandas as pd
+    from statsmodels.tsa.stattools import kpss
+
+    x = pd.Series(np.asarray(series, dtype=float)).dropna()
+    if len(x) < 20 or x.nunique() < 2:
+        return float("nan"), float("nan")
+    stat, pvalue, *_ = kpss(x, regression=regression, nlags="auto")
+    return float(stat), float(pvalue)

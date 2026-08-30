@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.72.0
+
+- Added a KPSS stationarity diagnostic. Its stationarity null complements the
+  ADF unit-root null, so the two tests make disagreement visible.
+
 ## 0.71.0
 
 - Added an Augmented Dickey-Fuller unit-root diagnostic for separating a
