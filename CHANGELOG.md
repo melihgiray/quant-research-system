@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.80.0
+
+- Added an ATM term-structure summary that identifies upward, flat, or inverted
+  curves without conflating a crisis inversion with a bad quote.
+
 ## 0.79.0
 
 - Added a surface-based downside-skew summary at a specified tenor and

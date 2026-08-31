@@ -48,3 +48,16 @@ def test_volatility_skew_reports_the_expected_downside_shape():
     assert skew["atm_iv"] == pytest.approx(0.20)
     assert skew["call_iv"] == pytest.approx(0.16)
     assert skew["put_minus_call"] == pytest.approx(0.08)
+
+
+def test_term_structure_calls_out_inversion_without_flagging_it_as_bad_data():
+    from quant_system.options.diagnostics import atm_term_structure_summary
+
+    class Surface:
+        @staticmethod
+        def implied_vol(k, t):
+            return 0.50 - 0.40 * t
+
+    term = atm_term_structure_summary(Surface(), short_days=30, long_days=180)
+    assert term["shape"] == "inverted"
+    assert term["slope"] < 0

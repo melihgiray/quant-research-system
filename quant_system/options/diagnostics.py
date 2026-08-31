@@ -63,3 +63,13 @@ def volatility_skew(surface, days: int = 30, wing: float = 0.10) -> dict:
     return {"days": int(days), "wing": float(wing), "put_iv": put,
             "atm_iv": atm, "call_iv": call, "put_minus_call": put - call,
             "put_minus_atm": put - atm}
+
+
+def atm_term_structure_summary(surface, short_days: int = 30, long_days: int = 180) -> dict:
+    """Describe the ATM term slope without treating an inverted curve as an error."""
+    short = float(surface.implied_vol(0.0, short_days / 365.0))
+    long = float(surface.implied_vol(0.0, long_days / 365.0))
+    slope = long - short
+    return {"short_days": int(short_days), "long_days": int(long_days),
+            "short_iv": short, "long_iv": long, "slope": slope,
+            "shape": "upward" if slope > 0 else "inverted" if slope < 0 else "flat"}
