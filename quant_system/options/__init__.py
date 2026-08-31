@@ -41,6 +41,7 @@ from .arbitrage import (
 )
 from .surface import VolSurface, build_surface, plot_surface
 from .history import OptionsDayData, load_optionsdx_csv
+from .diagnostics import put_call_parity_residuals
 
 __all__ = [
     "CALL",
@@ -72,4 +73,5 @@ __all__ = [
     "plot_surface",
     "OptionsDayData",
     "load_optionsdx_csv",
+    "put_call_parity_residuals",
 ]

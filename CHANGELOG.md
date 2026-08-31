@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.77.0
+
+- Added a put-call parity diagnostic that grades mismatches against the combined
+  bid-ask spread of the two legs.
+
 ## 0.76.0
 
 - Added the Engle-Manganelli dynamic-quantile test for VaR adequacy. It checks
