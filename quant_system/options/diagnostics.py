@@ -47,3 +47,19 @@ def liquidity_profile(chain) -> dict:
         "share_with_volume": float((volume > 0).mean()),
         "share_with_open_interest": float((q["open_interest"].fillna(0.0) > 0).mean()),
     }
+
+
+def volatility_skew(surface, days: int = 30, wing: float = 0.10) -> dict:
+    """Measure ATM, put-wing, and call-wing volatility at one maturity.
+
+    ``put_minus_call`` is positive for the usual equity downside skew. Values
+    come from the surface interpolation, so missing exact strikes do not create
+    a special case or an invented extrapolation.
+    """
+    t = float(days) / 365.0
+    put = float(surface.implied_vol(-abs(wing), t))
+    atm = float(surface.implied_vol(0.0, t))
+    call = float(surface.implied_vol(abs(wing), t))
+    return {"days": int(days), "wing": float(wing), "put_iv": put,
+            "atm_iv": atm, "call_iv": call, "put_minus_call": put - call,
+            "put_minus_atm": put - atm}

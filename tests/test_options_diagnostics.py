@@ -33,3 +33,18 @@ def test_liquidity_profile_uses_relative_spreads_and_activity():
     assert profile["median_spread"] == pytest.approx(0.2)
     assert profile["median_relative_spread"] == pytest.approx(0.04)
     assert profile["share_with_volume"] == 1.0
+
+
+def test_volatility_skew_reports_the_expected_downside_shape():
+    from quant_system.options.diagnostics import volatility_skew
+
+    class Surface:
+        @staticmethod
+        def implied_vol(k, t):
+            return 0.20 - 0.40 * k
+
+    skew = volatility_skew(Surface(), days=30, wing=0.10)
+    assert skew["put_iv"] == pytest.approx(0.24)
+    assert skew["atm_iv"] == pytest.approx(0.20)
+    assert skew["call_iv"] == pytest.approx(0.16)
+    assert skew["put_minus_call"] == pytest.approx(0.08)

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.79.0
+
+- Added a surface-based downside-skew summary at a specified tenor and
+  log-moneyness wing.
+
 ## 0.78.0
 
 - Added a quote-liquidity profile reporting absolute and relative spreads plus

@@ -41,7 +41,7 @@ from .arbitrage import (
 )
 from .surface import VolSurface, build_surface, plot_surface
 from .history import OptionsDayData, load_optionsdx_csv
-from .diagnostics import liquidity_profile, put_call_parity_residuals
+from .diagnostics import liquidity_profile, put_call_parity_residuals, volatility_skew
 
 __all__ = [
     "CALL",
@@ -75,4 +75,5 @@ __all__ = [
     "load_optionsdx_csv",
     "put_call_parity_residuals",
     "liquidity_profile",
+    "volatility_skew",
 ]
