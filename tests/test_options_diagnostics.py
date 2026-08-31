@@ -3,6 +3,7 @@ import pytest
 
 from quant_system.options.chain import OptionChain
 from quant_system.options.diagnostics import put_call_parity_residuals
+from quant_system.options.diagnostics import liquidity_profile
 
 
 def _chain(call_mid=5.0, put_mid=5.0):
@@ -23,3 +24,12 @@ def test_parity_residual_is_zero_for_matched_quotes():
 def test_parity_flags_a_mismatch_larger_than_the_spreads():
     report = put_call_parity_residuals(_chain(call_mid=6.0, put_mid=5.0))
     assert report.iloc[0]["exceeds_spread"]
+
+
+def test_liquidity_profile_uses_relative_spreads_and_activity():
+    chain = _chain()
+    profile = liquidity_profile(chain)
+    assert profile["n_quotes"] == 2
+    assert profile["median_spread"] == pytest.approx(0.2)
+    assert profile["median_relative_spread"] == pytest.approx(0.04)
+    assert profile["share_with_volume"] == 1.0

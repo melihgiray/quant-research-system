@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.78.0
+
+- Added a quote-liquidity profile reporting absolute and relative spreads plus
+  quoted activity coverage.
+
 ## 0.77.0
 
 - Added a put-call parity diagnostic that grades mismatches against the combined

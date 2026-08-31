@@ -31,3 +31,19 @@ def put_call_parity_residuals(chain, rate: float = 0.0, dividend_yield: float = 
     out["combined_spread"] = spread
     out["exceeds_spread"] = np.abs(residual) > spread
     return out
+
+
+def liquidity_profile(chain) -> dict:
+    """Summarise quoted spread and activity without treating zero as liquidity."""
+    q = chain.quotes.copy()
+    spread = q["ask"] - q["bid"]
+    mid = q["mid"].replace(0.0, np.nan)
+    relative = spread / mid
+    volume = q["volume"].fillna(0.0)
+    return {
+        "n_quotes": int(len(q)),
+        "median_spread": float(spread.median()),
+        "median_relative_spread": float(relative.median()),
+        "share_with_volume": float((volume > 0).mean()),
+        "share_with_open_interest": float((q["open_interest"].fillna(0.0) > 0).mean()),
+    }
