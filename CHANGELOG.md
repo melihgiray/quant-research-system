@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.81.0
+
+- Added a surface-quality gate for descriptive research output. It fails on a
+  material IV inversion failure rate or static-arbitrage violations larger than
+  quoted spreads, while retaining mid-price artifacts as visible diagnostics.
+
 ## 0.80.0
 
 - Added an ATM term-structure summary that identifies upward, flat, or inverted

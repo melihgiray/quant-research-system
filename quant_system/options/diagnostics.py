@@ -73,3 +73,24 @@ def atm_term_structure_summary(surface, short_days: int = 30, long_days: int = 1
     return {"short_days": int(short_days), "long_days": int(long_days),
             "short_iv": short, "long_iv": long, "slope": slope,
             "shape": "upward" if slope > 0 else "inverted" if slope < 0 else "flat"}
+
+
+def surface_quality_gate(chain, surface, max_iv_failure_rate: float = 0.20) -> dict:
+    """Summarise whether a surface is fit for descriptive research output.
+
+    This is deliberately a data-quality gate, not an order gate. A high inversion
+    failure rate or a static-arbitrage violation larger than quoted spreads marks
+    the surface for review; ordinary mid-price artifacts remain visible but do
+    not fail the gate.
+    """
+    n = max(int(chain.n_quotes), 1)
+    failures = int(sum(surface.iv_failures.values()))
+    failure_rate = failures / n
+    tradeable = len(surface.arbitrage.tradeable)
+    reasons = []
+    if failure_rate > max_iv_failure_rate:
+        reasons.append("iv_failure_rate")
+    if tradeable:
+        reasons.append("tradeable_static_arbitrage")
+    return {"ok": not reasons, "reasons": reasons, "iv_failures": failures,
+            "iv_failure_rate": failure_rate, "tradeable_violations": tradeable}

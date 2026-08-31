@@ -61,3 +61,20 @@ def test_term_structure_calls_out_inversion_without_flagging_it_as_bad_data():
     term = atm_term_structure_summary(Surface(), short_days=30, long_days=180)
     assert term["shape"] == "inverted"
     assert term["slope"] < 0
+
+
+def test_surface_quality_gate_only_fails_on_material_problems():
+    from quant_system.options.diagnostics import surface_quality_gate
+
+    class Arb:
+        tradeable = []
+    class Surface:
+        iv_failures = {}
+        arbitrage = Arb()
+
+    assert surface_quality_gate(_chain(), Surface())["ok"]
+    Surface.iv_failures = {"solver_failed": 1}
+    Arb.tradeable = [object()]
+    result = surface_quality_gate(_chain(), Surface())
+    assert not result["ok"]
+    assert "tradeable_static_arbitrage" in result["reasons"]

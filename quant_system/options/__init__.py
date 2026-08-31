@@ -43,7 +43,7 @@ from .surface import VolSurface, build_surface, plot_surface
 from .history import OptionsDayData, load_optionsdx_csv
 from .diagnostics import (
     atm_term_structure_summary, liquidity_profile, put_call_parity_residuals,
-    volatility_skew,
+    surface_quality_gate, volatility_skew,
 )
 
 __all__ = [
@@ -80,4 +80,5 @@ __all__ = [
     "liquidity_profile",
     "volatility_skew",
     "atm_term_structure_summary",
+    "surface_quality_gate",
 ]
