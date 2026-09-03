@@ -11,6 +11,7 @@ from quant_system.replications.volatility_managed import (
     inverse_variance_exposure,
     walk_forward_volatility_managed,
 )
+from scripts.build_volatility_managed_results import _markdown_table, _metric_table
 
 
 def _returns(n: int = 130) -> pd.Series:
@@ -65,3 +66,10 @@ def test_ken_french_daily_parser_converts_percent_to_decimal(monkeypatch):
     frame = download_ken_french_daily()
     assert frame.loc[pd.Timestamp("2020-01-02"), "Mkt-RF"] == 0.01
     assert frame.loc[pd.Timestamp("2020-01-02"), "HML"] == -0.03
+
+
+def test_results_table_has_no_optional_formatter_dependency():
+    table = _metric_table(walk_forward_volatility_managed(_returns(), train_days=63, test_days=21, vol_lookback=21))
+    rendered = _markdown_table(table)
+    assert "| Strategy |" in rendered
+    assert "Volatility-managed Mkt-RF" in rendered

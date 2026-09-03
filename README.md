@@ -20,8 +20,34 @@ Ken French factor returns and an expanding out-of-sample design: realised
 variance for a date ends the prior day, and the equal-volatility multiplier is
 fitted inside each preceding training window. This differs deliberately from
 the paper's full-sample descriptive normalization, which would leak later
-information into an out-of-sample test. The results runner is added separately;
-no paper-matching performance claim is made here.
+information into an out-of-sample test. No paper-matching performance claim is
+made here. Run
+`python scripts/build_volatility_managed_results.py` to download the official
+file and write the current metrics table and equity chart. The output is gross
+of trading costs because the factor return is a research series, not an
+executable instrument.
+
+### Volatility-managed market factor
+
+The current run uses daily Mkt-RF returns from the Ken French Data Library, a
+five-year initial training window, one-year test windows, and a 21-trading-day
+realised-variance estimate. It contains 99 expanding out-of-sample folds from
+1930-10-01 to 2026-03-25. The scale multiplier is re-estimated only at each
+fold boundary. Reproduce with `python scripts/build_volatility_managed_results.py`.
+
+| Strategy | OOS Sharpe | Ann. return | Ann. vol | Max drawdown | Ann. exposure turnover |
+|---|---:|---:|---:|---:|---:|
+| Unmanaged Mkt-RF | 0.46 | 6.5% | 17.0% | -74.4% | n/a |
+| Volatility-managed Mkt-RF | 0.47 | 7.3% | 20.1% | -79.7% | 31.0x |
+
+![Volatility-managed market-factor equity curves](docs/results/volatility_managed_equity.png)
+
+This is not a clean win. The managed series gains a small amount of gross
+return and Sharpe, but has higher realised volatility and a deeper maximum
+drawdown. Its reported turnover is a factor-exposure proxy, not a tradable
+implementation-cost estimate. The result therefore supports the narrow
+historical comparison, not a claim of deployable alpha or paper-level
+performance parity.
 
 ## Results
 

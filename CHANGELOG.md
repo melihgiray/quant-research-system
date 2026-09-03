@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.83.0
+
+- Added a one-command runner for the volatility-managed portfolio replication.
+  It downloads the official daily market-factor data, writes a metrics CSV, and
+  saves the expanding out-of-sample equity comparison.
+- On the current 1930-10-01 to 2026-03-25 gross sample, the managed market
+  factor has a modestly higher Sharpe (0.47 versus 0.46) and annual return
+  (7.3% versus 6.5%), but a worse maximum drawdown (-79.7% versus -74.4%).
+  The result is a research-series comparison, not an executable net return.
+
 ## 0.82.0
 
 - Added a causal, expanding-window implementation of Moreira and Muir's (2017)
