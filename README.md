@@ -10,6 +10,19 @@ these ideas survive once costs and proper out-of-sample testing get in the way,
 and most of the interesting output is about how much of an edge the frictions
 eat.
 
+## Replication studies
+
+The repository also contains small, separately documented replications of
+published research. The first is Moreira and Muir (2017),
+[*Volatility-Managed Portfolios*](https://doi.org/10.1111/jofi.12513). It scales
+a factor by inverse trailing realised variance. The implementation uses daily
+Ken French factor returns and an expanding out-of-sample design: realised
+variance for a date ends the prior day, and the equal-volatility multiplier is
+fitted inside each preceding training window. This differs deliberately from
+the paper's full-sample descriptive normalization, which would leak later
+information into an out-of-sample test. The results runner is added separately;
+no paper-matching performance claim is made here.
+
 ## Results
 
 Walk-forward out-of-sample, real daily data (yfinance), 2016-01-04 to

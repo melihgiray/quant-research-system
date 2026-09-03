@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.82.0
+
+- Added a causal, expanding-window implementation of Moreira and Muir's (2017)
+  volatility-managed portfolio rule. It uses prior-day realised variance and
+  calibrates each equal-volatility multiplier in the preceding training window,
+  rather than applying a full-sample normalization to out-of-sample returns.
+- Added an official Ken French daily-data downloader and parser for reproducible
+  factor-return studies.
+
 ## 0.81.0
 
 - Added a surface-quality gate for descriptive research output. It fails on a
