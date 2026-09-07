@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.90.0
+
+- Added a saved calendar-subperiod table to the volatility-managed runner.
+  This makes the time variation behind the full-sample comparison visible in
+  the checked-in research artefacts.
+
 ## 0.89.0
 
 - Added calendar subperiod statistics for the volatility-managed replication to

@@ -35,7 +35,7 @@ realised-variance estimate. It contains 99 expanding out-of-sample folds from
 1930-10-01 to 2026-03-25. The scale multiplier is re-estimated only at each
 fold boundary. Reproduce with `python scripts/build_volatility_managed_results.py`.
 The runner also saves fold-level returns and an input manifest with the source
-URL, source digest, and exact window settings.
+URL, source digest, and exact window settings, plus a calendar-subperiod table.
 
 | Strategy | OOS Sharpe | Ann. return | Ann. vol | Max drawdown | Ann. exposure turnover |
 |---|---:|---:|---:|---:|---:|

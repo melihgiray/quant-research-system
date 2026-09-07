@@ -32,6 +32,7 @@ from quant_system.performance.analytics import compute_metrics
 from quant_system.replications.volatility_managed import (
     download_ken_french_daily_with_metadata,
     fold_statistics,
+    subperiod_statistics,
     walk_forward_volatility_managed,
 )
 
@@ -85,6 +86,7 @@ def main() -> int:
     )
     table = _metric_table(result)
     folds = fold_statistics(result)
+    subperiods = subperiod_statistics(result)
     span = f"{result.managed_returns.index.min().date()}..{result.managed_returns.index.max().date()}"
     print(f"[vol-managed] {len(result.folds)} expanding OOS folds, {span}")
     print("[vol-managed] gross returns; factor-series exposure turnover is a proxy, not an executable cost estimate\n")
@@ -95,6 +97,8 @@ def main() -> int:
     table.to_csv(csv_path, float_format="%.10f")
     folds_path = f"{OUT_DIR}/volatility_managed_folds.csv"
     folds.to_csv(folds_path, float_format="%.10f")
+    subperiods_path = f"{OUT_DIR}/volatility_managed_subperiods.csv"
+    subperiods.to_csv(subperiods_path, float_format="%.10f")
     manifest_path = f"{OUT_DIR}/volatility_managed_manifest.json"
     with open(manifest_path, "w", encoding="utf-8") as handle:
         json.dump({
@@ -124,7 +128,7 @@ def main() -> int:
     fig.tight_layout()
     chart_path = f"{OUT_DIR}/volatility_managed_equity.png"
     fig.savefig(chart_path, dpi=120, bbox_inches="tight")
-    print(f"\n[vol-managed] wrote {csv_path}, {folds_path}, {manifest_path}, and {chart_path}")
+    print(f"\n[vol-managed] wrote {csv_path}, {folds_path}, {subperiods_path}, {manifest_path}, and {chart_path}")
     return 0
 
 
