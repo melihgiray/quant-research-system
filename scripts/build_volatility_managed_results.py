@@ -16,6 +16,7 @@ Outputs:
 
 from __future__ import annotations
 
+import json
 import os
 import sys
 
@@ -29,7 +30,8 @@ import pandas as pd
 
 from quant_system.performance.analytics import compute_metrics
 from quant_system.replications.volatility_managed import (
-    download_ken_french_daily,
+    download_ken_french_daily_with_metadata,
+    fold_statistics,
     walk_forward_volatility_managed,
 )
 
@@ -70,7 +72,8 @@ def _markdown_table(table: pd.DataFrame) -> str:
 def main() -> int:
     """Download the official factor file, run the study, and save its outputs."""
     print("[vol-managed] downloading the Ken French daily factor file")
-    factors = download_ken_french_daily()
+    source = download_ken_french_daily_with_metadata()
+    factors = source.returns
     if "Mkt-RF" not in factors:
         raise ValueError("official factor file did not contain Mkt-RF")
 
@@ -81,6 +84,7 @@ def main() -> int:
         vol_lookback=VOL_LOOKBACK,
     )
     table = _metric_table(result)
+    folds = fold_statistics(result)
     span = f"{result.managed_returns.index.min().date()}..{result.managed_returns.index.max().date()}"
     print(f"[vol-managed] {len(result.folds)} expanding OOS folds, {span}")
     print("[vol-managed] gross returns; factor-series exposure turnover is a proxy, not an executable cost estimate\n")
@@ -89,6 +93,21 @@ def main() -> int:
     os.makedirs(OUT_DIR, exist_ok=True)
     csv_path = f"{OUT_DIR}/volatility_managed_metrics.csv"
     table.to_csv(csv_path, float_format="%.10f")
+    folds_path = f"{OUT_DIR}/volatility_managed_folds.csv"
+    folds.to_csv(folds_path, float_format="%.10f")
+    manifest_path = f"{OUT_DIR}/volatility_managed_manifest.json"
+    with open(manifest_path, "w", encoding="utf-8") as handle:
+        json.dump({
+            "source_url": source.source_url,
+            "source_sha256": source.sha256,
+            "return_column": "Mkt-RF",
+            "train_days": TRAIN_DAYS,
+            "test_days": TEST_DAYS,
+            "vol_lookback": VOL_LOOKBACK,
+            "oos_start": str(result.managed_returns.index.min().date()),
+            "oos_end": str(result.managed_returns.index.max().date()),
+            "n_folds": len(result.folds),
+        }, handle, indent=2, sort_keys=True)
 
     fig, ax = plt.subplots(figsize=(9, 4.5))
     for label, returns, color in (
@@ -105,7 +124,7 @@ def main() -> int:
     fig.tight_layout()
     chart_path = f"{OUT_DIR}/volatility_managed_equity.png"
     fig.savefig(chart_path, dpi=120, bbox_inches="tight")
-    print(f"\n[vol-managed] wrote {csv_path} and {chart_path}")
+    print(f"\n[vol-managed] wrote {csv_path}, {folds_path}, {manifest_path}, and {chart_path}")
     return 0
 
 

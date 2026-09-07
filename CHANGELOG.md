@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.86.0
+
+- The volatility-managed results runner now writes fold-level diagnostics and a
+  JSON manifest containing its source digest, factor column, and window choices.
+
 ## 0.85.0
 
 - Added per-fold return, Sharpe, and scale diagnostics to the volatility-managed
