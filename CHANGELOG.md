@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.95.0
+
+- Added a factor-data validation gate for replication inputs. The Ken French
+  loader now rejects unsorted or duplicate dates and columns with material
+  missingness rather than silently repairing them.
+
 ## 0.94.0
 
 - Added the volatility-managed timing regression result to the reproducibility

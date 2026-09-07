@@ -123,13 +123,38 @@ def download_ken_french_daily_with_metadata(
     frame = pd.read_csv(StringIO("\n".join(lines[header:end])), index_col=0)
     frame.index = pd.to_datetime(frame.index.astype(str).str.strip(), format="%Y%m%d")
     frame.columns = [str(column).strip() for column in frame.columns]
-    returns = frame.apply(pd.to_numeric, errors="coerce").div(100.0)
+    returns = validate_factor_returns(frame.apply(pd.to_numeric, errors="coerce").div(100.0))
     return KenFrenchDataset(returns=returns, source_url=url, sha256=sha256(payload).hexdigest())
 
 
 def download_ken_french_daily(dataset: str = "F-F_Research_Data_Factors_daily", timeout: int = 30) -> pd.DataFrame:
     """Download daily Ken French returns without the optional provenance wrapper."""
     return download_ken_french_daily_with_metadata(dataset, timeout).returns
+
+
+def validate_factor_returns(
+    returns: pd.DataFrame, max_missing_fraction: float = 0.01
+) -> pd.DataFrame:
+    """Validate a daily factor-return table before using it in a study.
+
+    The function does not fill values or reorder observations. Any duplicate or
+    unsorted dates, empty table, non-datetime index, or materially incomplete
+    column is rejected so a data problem cannot masquerade as a research result.
+    """
+    if not 0.0 <= max_missing_fraction < 1.0:
+        raise ValueError("max_missing_fraction must be in [0, 1)")
+    if returns.empty or returns.shape[1] == 0:
+        raise ValueError("factor returns must contain at least one row and column")
+    if not isinstance(returns.index, pd.DatetimeIndex):
+        raise TypeError("factor returns must use a DatetimeIndex")
+    if not returns.index.is_monotonic_increasing or not returns.index.is_unique:
+        raise ValueError("factor-return dates must be sorted and unique")
+    missing = returns.isna().mean()
+    bad = missing[missing > max_missing_fraction]
+    if not bad.empty:
+        detail = ", ".join(f"{column}={fraction:.1%}" for column, fraction in bad.items())
+        raise ValueError(f"factor-return columns exceed missing-data limit: {detail}")
+    return returns
 
 
 def inverse_variance_exposure(returns: pd.Series, lookback: int = 21) -> pd.Series:

@@ -12,6 +12,7 @@ from quant_system.replications.volatility_managed import (
     fold_statistics,
     subperiod_statistics,
     timing_regression,
+    validate_factor_returns,
     inverse_variance_exposure,
     walk_forward_volatility_managed,
 )
@@ -90,6 +91,19 @@ def test_timing_regression_recovers_a_known_factor_loading():
     assert abs(result.alpha_daily - 0.0002) < 1e-10
     assert abs(result.beta - 1.3) < 1e-10
     assert result.r_squared > 0.999
+
+
+def test_factor_validation_rejects_unsorted_duplicates_and_missing_data():
+    index = pd.to_datetime(["2020-01-02", "2020-01-01"])
+    unsorted = pd.DataFrame({"Mkt-RF": [0.01, 0.02]}, index=index)
+    with np.testing.assert_raises(ValueError):
+        validate_factor_returns(unsorted)
+    duplicate = pd.DataFrame({"Mkt-RF": [0.01, 0.02]}, index=pd.to_datetime(["2020-01-01", "2020-01-01"]))
+    with np.testing.assert_raises(ValueError):
+        validate_factor_returns(duplicate)
+    missing = pd.DataFrame({"Mkt-RF": [0.01, np.nan]}, index=pd.bdate_range("2020-01-01", periods=2))
+    with np.testing.assert_raises(ValueError):
+        validate_factor_returns(missing, max_missing_fraction=0.01)
 
 
 def test_ken_french_daily_parser_converts_percent_to_decimal(monkeypatch):

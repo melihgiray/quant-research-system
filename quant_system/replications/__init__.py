@@ -13,6 +13,7 @@ from .volatility_managed import (
     fold_statistics,
     subperiod_statistics,
     timing_regression,
+    validate_factor_returns,
     inverse_variance_exposure,
     walk_forward_volatility_managed,
 )
@@ -26,6 +27,7 @@ __all__ = [
     "fold_statistics",
     "subperiod_statistics",
     "timing_regression",
+    "validate_factor_returns",
     "inverse_variance_exposure",
     "walk_forward_volatility_managed",
 ]
