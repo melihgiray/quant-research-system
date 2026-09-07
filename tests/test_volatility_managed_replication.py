@@ -41,6 +41,13 @@ def test_walk_forward_returns_only_non_overlapping_oos_windows():
         assert fold["train_end"] < fold["test_start"]
 
 
+def test_turnover_includes_the_change_across_a_fold_boundary():
+    result = walk_forward_volatility_managed(_returns(), train_days=63, test_days=21, vol_lookback=21)
+    boundary = result.folds[1]["test_start"]
+    previous = result.exposure.index[result.exposure.index.get_loc(boundary) - 1]
+    assert result.turnover.loc[boundary] == abs(result.exposure.loc[boundary] - result.exposure.loc[previous])
+
+
 def test_fold_scale_is_fitted_before_its_test_window():
     returns = _returns()
     original = walk_forward_volatility_managed(returns, train_days=63, test_days=21, vol_lookback=21)

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.87.0
+
+- Fixed the volatility-managed exposure-turnover proxy at walk-forward fold
+  boundaries. It now includes the exposure change from the prior test window
+  instead of resetting turnover to zero at every re-estimation date.
+
 ## 0.86.0
 
 - The volatility-managed results runner now writes fold-level diagnostics and a

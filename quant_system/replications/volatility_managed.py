@@ -175,7 +175,7 @@ def walk_forward_volatility_managed(
         raise ValueError("training and test windows are too short")
 
     raw = inverse_variance_exposure(series, vol_lookback)
-    unmanaged_parts, managed_parts, exposure_parts, turnover_parts = [], [], [], []
+    unmanaged_parts, managed_parts, exposure_parts = [], [], []
     folds: List[Dict[str, object]] = []
     train_end = train_days
 
@@ -185,12 +185,10 @@ def walk_forward_volatility_managed(
         multiplier = _normalization_multiplier(series.loc[train_index], raw.loc[train_index])
         exposure = (multiplier * raw.loc[test_index]).rename("exposure")
         managed = (exposure * series.loc[test_index]).rename("managed")
-        turnover = exposure.diff().abs().fillna(0.0).rename("turnover")
 
         unmanaged_parts.append(series.loc[test_index])
         managed_parts.append(managed)
         exposure_parts.append(exposure)
-        turnover_parts.append(turnover)
         folds.append({
             "train_start": train_index[0],
             "train_end": train_index[-1],
@@ -205,8 +203,8 @@ def walk_forward_volatility_managed(
     unmanaged = pd.concat(unmanaged_parts)
     managed = pd.concat(managed_parts)
     exposure = pd.concat(exposure_parts)
-    turnover = pd.concat(turnover_parts)
-    turnover.iloc[0] = exposure.iloc[0]
+    turnover = exposure.diff().abs().rename("turnover")
+    turnover.iloc[0] = abs(exposure.iloc[0])
     return VolatilityManagedResult(unmanaged, managed, exposure, turnover, folds)
 
 
