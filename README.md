@@ -51,7 +51,10 @@ implementation-cost estimate. The result therefore supports the narrow
 historical comparison, not a claim of deployable alpha or paper-level
 performance parity. The managed-minus-unmanaged Sharpe gap is only +0.018, and
 its 95% paired stationary-bootstrap interval is [-0.199, +0.238], which spans
-zero by a wide margin.
+zero by a wide margin. A HAC regression of managed on unmanaged returns reports
+a +4.69% annualized intercept (t=2.42), beta 0.63, and R-squared 0.28. That
+intercept is a conditional timing diagnostic for a gross factor series, not
+evidence of a new standalone source of alpha.
 
 ## Results
 

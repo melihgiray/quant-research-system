@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.94.0
+
+- Added the volatility-managed timing regression result to the reproducibility
+  manifest produced by the study runner.
+
 ## 0.93.0
 
 - Added a Newey-West/HAC timing regression of managed returns on the unmanaged

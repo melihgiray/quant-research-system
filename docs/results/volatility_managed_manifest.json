@@ -14,6 +14,15 @@
   "source_sha256": "1916d331c2c51d2aee3d00215897d2b8e5995cb387f1f4569ba46bff5fb049a8",
   "source_url": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/F-F_Research_Data_Factors_daily_CSV.zip",
   "test_days": 252,
+  "timing_regression_hac": {
+    "alpha_annual": 0.04686624006286895,
+    "alpha_daily": 0.0001859771431066228,
+    "alpha_tstat": 2.423829794190586,
+    "beta": 0.6266488730669771,
+    "hac_lags": 5,
+    "n_obs": 24948,
+    "r_squared": 0.28033361359661324
+  },
   "train_days": 1260,
   "vol_lookback": 21
 }
