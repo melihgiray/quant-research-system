@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.84.0
+
+- Added source URL and SHA-256 provenance for Ken French downloads used in a
+  replication run. The digest identifies the exact upstream ZIP payload even
+  when the library later revises its historical files.
+
 ## 0.83.0
 
 - Added a one-command runner for the volatility-managed portfolio replication.

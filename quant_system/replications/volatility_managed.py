@@ -11,6 +11,7 @@ using that normalization in an out-of-sample test would leak future data.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from hashlib import sha256
 from io import BytesIO, StringIO
 from typing import Dict, List
 from zipfile import ZipFile
@@ -51,7 +52,18 @@ class VolatilityManagedResult:
     folds: List[Dict[str, object]] = field(default_factory=list)
 
 
-def download_ken_french_daily(dataset: str = "F-F_Research_Data_Factors_daily", timeout: int = 30) -> pd.DataFrame:
+@dataclass(frozen=True)
+class KenFrenchDataset:
+    """Daily Ken French returns together with immutable source provenance."""
+
+    returns: pd.DataFrame
+    source_url: str
+    sha256: str
+
+
+def download_ken_french_daily_with_metadata(
+    dataset: str = "F-F_Research_Data_Factors_daily", timeout: int = 30
+) -> KenFrenchDataset:
     """Download and parse a daily Ken French Data Library CSV ZIP file.
 
     Parameters
@@ -64,9 +76,10 @@ def download_ken_french_daily(dataset: str = "F-F_Research_Data_Factors_daily", 
 
     Returns
     -------
-    pd.DataFrame
-        Daily decimal returns indexed by timestamp.  Ken French publishes the
-        source files in percent, so values are divided by 100 here.
+    KenFrenchDataset
+        Daily decimal returns plus the source URL and the SHA-256 digest of the
+        exact ZIP payload. Ken French publishes the source files in percent, so
+        values are divided by 100 here.
 
     Raises
     ------
@@ -78,7 +91,8 @@ def download_ken_french_daily(dataset: str = "F-F_Research_Data_Factors_daily", 
     url = f"{KEN_FRENCH_FTP}/{dataset}_CSV.zip"
     response = requests.get(url, timeout=timeout)
     response.raise_for_status()
-    with ZipFile(BytesIO(response.content)) as archive:
+    payload = response.content
+    with ZipFile(BytesIO(payload)) as archive:
         names = [name for name in archive.namelist() if name.lower().endswith(".csv")]
         if not names:
             raise ValueError("Ken French archive contains no CSV file")
@@ -95,7 +109,13 @@ def download_ken_french_daily(dataset: str = "F-F_Research_Data_Factors_daily", 
     frame = pd.read_csv(StringIO("\n".join(lines[header:end])), index_col=0)
     frame.index = pd.to_datetime(frame.index.astype(str).str.strip(), format="%Y%m%d")
     frame.columns = [str(column).strip() for column in frame.columns]
-    return frame.apply(pd.to_numeric, errors="coerce").div(100.0)
+    returns = frame.apply(pd.to_numeric, errors="coerce").div(100.0)
+    return KenFrenchDataset(returns=returns, source_url=url, sha256=sha256(payload).hexdigest())
+
+
+def download_ken_french_daily(dataset: str = "F-F_Research_Data_Factors_daily", timeout: int = 30) -> pd.DataFrame:
+    """Download daily Ken French returns without the optional provenance wrapper."""
+    return download_ken_french_daily_with_metadata(dataset, timeout).returns
 
 
 def inverse_variance_exposure(returns: pd.Series, lookback: int = 21) -> pd.Series:

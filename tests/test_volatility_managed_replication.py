@@ -8,6 +8,7 @@ import pandas as pd
 
 from quant_system.replications.volatility_managed import (
     download_ken_french_daily,
+    download_ken_french_daily_with_metadata,
     inverse_variance_exposure,
     walk_forward_volatility_managed,
 )
@@ -66,6 +67,26 @@ def test_ken_french_daily_parser_converts_percent_to_decimal(monkeypatch):
     frame = download_ken_french_daily()
     assert frame.loc[pd.Timestamp("2020-01-02"), "Mkt-RF"] == 0.01
     assert frame.loc[pd.Timestamp("2020-01-02"), "HML"] == -0.03
+
+
+def test_ken_french_download_metadata_identifies_the_exact_payload(monkeypatch):
+    buffer = BytesIO()
+    with ZipFile(buffer, "w") as archive:
+        archive.writestr("factors.CSV", ",Mkt-RF,RF\n20200102,1.00,0.01\n")
+    payload = buffer.getvalue()
+
+    class Response:
+        content = payload
+
+        def raise_for_status(self):
+            return None
+
+    monkeypatch.setattr("quant_system.replications.volatility_managed.requests.get", lambda *args, **kwargs: Response())
+    result = download_ken_french_daily_with_metadata()
+    assert result.sha256
+    assert len(result.sha256) == 64
+    assert result.source_url.endswith("F-F_Research_Data_Factors_daily_CSV.zip")
+    assert result.returns.loc[pd.Timestamp("2020-01-02"), "Mkt-RF"] == 0.01
 
 
 def test_results_table_has_no_optional_formatter_dependency():
