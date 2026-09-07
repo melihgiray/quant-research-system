@@ -1,4 +1,12 @@
 {
+  "managed_minus_unmanaged_sharpe": {
+    "avg_block_days": 10,
+    "ci_high": 0.23841316402663695,
+    "ci_low": -0.19883210719523728,
+    "level": 0.95,
+    "n_boot": 2000,
+    "point": 0.01773633126534646
+  },
   "n_folds": 99,
   "oos_end": "2026-03-25",
   "oos_start": "1930-10-01",

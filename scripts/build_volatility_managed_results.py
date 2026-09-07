@@ -29,6 +29,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 from quant_system.performance.analytics import compute_metrics
+from quant_system.performance.bootstrap import paired_sharpe_difference_interval
 from quant_system.replications.volatility_managed import (
     download_ken_french_daily_with_metadata,
     fold_statistics,
@@ -87,10 +88,16 @@ def main() -> int:
     table = _metric_table(result)
     folds = fold_statistics(result)
     subperiods = subperiod_statistics(result)
+    sharpe_gap = paired_sharpe_difference_interval(
+        result.managed_returns, result.unmanaged_returns, n_boot=2_000, avg_block=10
+    )
     span = f"{result.managed_returns.index.min().date()}..{result.managed_returns.index.max().date()}"
     print(f"[vol-managed] {len(result.folds)} expanding OOS folds, {span}")
     print("[vol-managed] gross returns; factor-series exposure turnover is a proxy, not an executable cost estimate\n")
     print(_markdown_table(table))
+    print(f"\n[vol-managed] managed minus unmanaged Sharpe: {sharpe_gap.point:+.4f} "
+          f"({sharpe_gap.level:.0%} stationary-bootstrap CI "
+          f"[{sharpe_gap.low:+.4f}, {sharpe_gap.high:+.4f}])")
 
     os.makedirs(OUT_DIR, exist_ok=True)
     csv_path = f"{OUT_DIR}/volatility_managed_metrics.csv"
@@ -111,6 +118,14 @@ def main() -> int:
             "oos_start": str(result.managed_returns.index.min().date()),
             "oos_end": str(result.managed_returns.index.max().date()),
             "n_folds": len(result.folds),
+            "managed_minus_unmanaged_sharpe": {
+                "point": sharpe_gap.point,
+                "ci_low": sharpe_gap.low,
+                "ci_high": sharpe_gap.high,
+                "level": sharpe_gap.level,
+                "n_boot": 2_000,
+                "avg_block_days": 10,
+            },
         }, handle, indent=2, sort_keys=True)
 
     fig, ax = plt.subplots(figsize=(9, 4.5))

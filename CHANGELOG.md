@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.92.0
+
+- The volatility-managed runner now reports a paired stationary-bootstrap
+  confidence interval for its managed-minus-unmanaged Sharpe difference.
+  The current 95% interval is [-0.199, +0.238] around a +0.018 point estimate,
+  so the small observed gap is not treated as decisive.
+
 ## 0.91.0
 
 - Added paired stationary-bootstrap confidence intervals for differences in

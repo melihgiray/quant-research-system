@@ -49,7 +49,9 @@ return and Sharpe, but has higher realised volatility and a deeper maximum
 drawdown. Its reported turnover is a factor-exposure proxy, not a tradable
 implementation-cost estimate. The result therefore supports the narrow
 historical comparison, not a claim of deployable alpha or paper-level
-performance parity.
+performance parity. The managed-minus-unmanaged Sharpe gap is only +0.018, and
+its 95% paired stationary-bootstrap interval is [-0.199, +0.238], which spans
+zero by a wide margin.
 
 ## Results
 
