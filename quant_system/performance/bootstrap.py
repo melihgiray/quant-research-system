@@ -78,6 +78,51 @@ def bootstrap_distribution(returns: pd.Series,
     return np.array([metric(paths[b]) for b in range(n_boot)])
 
 
+def paired_bootstrap_difference(
+    left: pd.Series,
+    right: pd.Series,
+    metric: Callable[[np.ndarray], float],
+    n_boot: int = 1000,
+    avg_block: int = 10,
+    seed: int = 7,
+) -> np.ndarray:
+    """Stationary-bootstrap distribution of ``metric(left) - metric(right)``.
+
+    Both return streams use the same resampled dates. That preserves their
+    contemporaneous relationship and is more informative than subtracting two
+    independently bootstrapped confidence intervals.
+    """
+    aligned = pd.concat([left.rename("left"), right.rename("right")], axis=1).dropna()
+    if len(aligned) < 20:
+        return np.array([])
+    rng = np.random.default_rng(seed)
+    idx = _stationary_indices(len(aligned), avg_block, n_boot, rng)
+    lhs = aligned["left"].to_numpy(float)[idx]
+    rhs = aligned["right"].to_numpy(float)[idx]
+    return np.array([metric(lhs[row]) - metric(rhs[row]) for row in range(n_boot)])
+
+
+def paired_sharpe_difference_interval(
+    left: pd.Series,
+    right: pd.Series,
+    level: float = 0.95,
+    n_boot: int = 1000,
+    avg_block: int = 10,
+    periods: int = TRADING_DAYS_PER_YEAR,
+    seed: int = 7,
+) -> ConfidenceInterval:
+    """Bootstrap interval for the annualised Sharpe difference of two streams."""
+    aligned = pd.concat([left.rename("left"), right.rename("right")], axis=1).dropna()
+    point = _ann_sharpe(aligned["left"].to_numpy(float), periods) - _ann_sharpe(
+        aligned["right"].to_numpy(float), periods
+    )
+    samples = paired_bootstrap_difference(
+        aligned["left"], aligned["right"], lambda values: _ann_sharpe(values, periods),
+        n_boot=n_boot, avg_block=avg_block, seed=seed,
+    )
+    return _percentile_ci(samples, point, level)
+
+
 # --- default metrics on a 1-D return array ----------------------------------- #
 def _ann_sharpe(arr: np.ndarray, periods: int = TRADING_DAYS_PER_YEAR) -> float:
     sd = arr.std(ddof=1)

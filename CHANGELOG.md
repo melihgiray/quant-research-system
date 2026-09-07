@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.91.0
+
+- Added paired stationary-bootstrap confidence intervals for differences in
+  annualised Sharpe ratios. Paired resampling preserves the same-day relation
+  between two strategies while assessing their performance gap.
+
 ## 0.90.0
 
 - Added a saved calendar-subperiod table to the volatility-managed runner.
