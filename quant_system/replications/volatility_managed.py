@@ -208,3 +208,29 @@ def walk_forward_volatility_managed(
     turnover = pd.concat(turnover_parts)
     turnover.iloc[0] = exposure.iloc[0]
     return VolatilityManagedResult(unmanaged, managed, exposure, turnover, folds)
+
+
+def fold_statistics(result: VolatilityManagedResult, periods: int = TRADING_DAYS_PER_YEAR) -> pd.DataFrame:
+    """Return gross performance diagnostics for each out-of-sample fold.
+
+    The rows are not independent observations; they are a descriptive check on
+    concentration of the aggregate result.  In particular, the table makes it
+    clear when an apparent long-history improvement comes from a small number
+    of test years.
+    """
+    rows = []
+    for number, fold in enumerate(result.folds, start=1):
+        managed = result.managed_returns.loc[fold["test_start"]:fold["test_end"]]
+        unmanaged = result.unmanaged_returns.loc[managed.index]
+        managed_std = managed.std(ddof=1)
+        rows.append({
+            "fold": number,
+            "test_start": fold["test_start"],
+            "test_end": fold["test_end"],
+            "multiplier": fold["multiplier"],
+            "unmanaged_return": float((1.0 + unmanaged).prod() - 1.0),
+            "managed_return": float((1.0 + managed).prod() - 1.0),
+            "managed_sharpe": float(np.sqrt(periods) * managed.mean() / managed_std)
+            if managed_std > 0 else float("nan"),
+        })
+    return pd.DataFrame(rows).set_index("fold")

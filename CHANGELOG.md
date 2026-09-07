@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.85.0
+
+- Added per-fold return, Sharpe, and scale diagnostics to the volatility-managed
+  replication so the aggregate result can be checked for historical concentration.
+
 ## 0.84.0
 
 - Added source URL and SHA-256 provenance for Ken French downloads used in a
