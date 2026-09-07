@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.88.0
+
+- Added an optional absolute exposure cap to the volatility-managed study for
+  implementation stress tests. The default remains uncapped and unchanged.
+
 ## 0.87.0
 
 - Fixed the volatility-managed exposure-turnover proxy at walk-forward fold

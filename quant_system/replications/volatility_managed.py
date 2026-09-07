@@ -150,6 +150,7 @@ def walk_forward_volatility_managed(
     train_days: int = 252 * 5,
     test_days: int = 252,
     vol_lookback: int = 21,
+    max_exposure: float | None = None,
 ) -> VolatilityManagedResult:
     """Run an expanding, causal replication of the volatility-managed rule.
 
@@ -167,12 +168,18 @@ def walk_forward_volatility_managed(
         Length of each following out-of-sample segment.
     vol_lookback:
         Number of prior daily returns used for realised variance.
+    max_exposure:
+        Optional absolute cap on the normalized factor exposure. ``None`` keeps
+        the paper-style uncapped rule. A cap is useful for an implementation
+        stress test, not for replacing the baseline replication.
     """
     series = returns.dropna().astype(float).sort_index()
     if not isinstance(series.index, pd.DatetimeIndex):
         raise TypeError("returns must use a DatetimeIndex")
     if train_days < vol_lookback + 2 or test_days < 1:
         raise ValueError("training and test windows are too short")
+    if max_exposure is not None and max_exposure <= 0:
+        raise ValueError("max_exposure must be positive when provided")
 
     raw = inverse_variance_exposure(series, vol_lookback)
     unmanaged_parts, managed_parts, exposure_parts = [], [], []
@@ -184,6 +191,8 @@ def walk_forward_volatility_managed(
         test_index = series.index[train_end:train_end + test_days]
         multiplier = _normalization_multiplier(series.loc[train_index], raw.loc[train_index])
         exposure = (multiplier * raw.loc[test_index]).rename("exposure")
+        if max_exposure is not None:
+            exposure = exposure.clip(lower=-max_exposure, upper=max_exposure)
         managed = (exposure * series.loc[test_index]).rename("managed")
 
         unmanaged_parts.append(series.loc[test_index])
