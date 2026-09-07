@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.93.0
+
+- Added a Newey-West/HAC timing regression of managed returns on the unmanaged
+  factor. It reports conditional alpha, beta, and fit while explicitly treating
+  the intercept as a timing diagnostic, not a stand-alone alpha claim.
+
 ## 0.92.0
 
 - The volatility-managed runner now reports a paired stationary-bootstrap

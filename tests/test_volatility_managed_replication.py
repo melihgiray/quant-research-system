@@ -11,6 +11,7 @@ from quant_system.replications.volatility_managed import (
     download_ken_french_daily_with_metadata,
     fold_statistics,
     subperiod_statistics,
+    timing_regression,
     inverse_variance_exposure,
     walk_forward_volatility_managed,
 )
@@ -80,6 +81,15 @@ def test_subperiod_statistics_partition_the_out_of_sample_track_record():
     summary = subperiod_statistics(result, years=1)
     assert summary["n_days"].sum() == len(result.managed_returns)
     assert {"managed_sharpe", "unmanaged_sharpe"}.issubset(summary.columns)
+
+
+def test_timing_regression_recovers_a_known_factor_loading():
+    base = _returns(160)
+    managed = 0.0002 + 1.3 * base
+    result = timing_regression(managed, base)
+    assert abs(result.alpha_daily - 0.0002) < 1e-10
+    assert abs(result.beta - 1.3) < 1e-10
+    assert result.r_squared > 0.999
 
 
 def test_ken_french_daily_parser_converts_percent_to_decimal(monkeypatch):

@@ -19,6 +19,7 @@ from zipfile import ZipFile
 import numpy as np
 import pandas as pd
 import requests
+import statsmodels.api as sm
 
 from ..config import TRADING_DAYS_PER_YEAR
 from ..performance.analytics import compute_metrics
@@ -60,6 +61,18 @@ class KenFrenchDataset:
     returns: pd.DataFrame
     source_url: str
     sha256: str
+
+
+@dataclass(frozen=True)
+class TimingRegression:
+    """HAC regression of managed returns on their unmanaged counterpart."""
+
+    alpha_daily: float
+    alpha_annual: float
+    alpha_tstat: float
+    beta: float
+    r_squared: float
+    n_obs: int
 
 
 def download_ken_french_daily_with_metadata(
@@ -276,3 +289,34 @@ def subperiod_statistics(
             "managed_return": m["ann_return"],
         })
     return pd.DataFrame(rows).set_index("period")
+
+
+def timing_regression(
+    managed_returns: pd.Series,
+    unmanaged_returns: pd.Series,
+    hac_lags: int = 5,
+    periods: int = TRADING_DAYS_PER_YEAR,
+) -> TimingRegression:
+    """Regress managed returns on the unmanaged factor with HAC errors.
+
+    The intercept is a timing alpha conditional on the base factor, not evidence
+    of a standalone tradable alpha. HAC standard errors allow for serial
+    dependence induced by volatility scaling.
+    """
+    if hac_lags < 0:
+        raise ValueError("hac_lags must be non-negative")
+    data = pd.concat([managed_returns.rename("managed"), unmanaged_returns.rename("unmanaged")], axis=1).dropna()
+    if len(data) < max(30, hac_lags + 5):
+        raise ValueError("too few paired observations for timing regression")
+    model = sm.OLS(data["managed"], sm.add_constant(data["unmanaged"])).fit(
+        cov_type="HAC", cov_kwds={"maxlags": hac_lags}
+    )
+    alpha = float(model.params["const"])
+    return TimingRegression(
+        alpha_daily=alpha,
+        alpha_annual=alpha * periods,
+        alpha_tstat=float(model.tvalues["const"]),
+        beta=float(model.params["unmanaged"]),
+        r_squared=float(model.rsquared),
+        n_obs=int(model.nobs),
+    )
