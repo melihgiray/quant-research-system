@@ -10,6 +10,7 @@ from quant_system.replications.volatility_managed import (
     download_ken_french_daily,
     download_ken_french_daily_with_metadata,
     fold_statistics,
+    subperiod_statistics,
     inverse_variance_exposure,
     walk_forward_volatility_managed,
 )
@@ -72,6 +73,13 @@ def test_fold_statistics_cover_each_out_of_sample_window_once():
     assert list(summary.index) == [1, 2, 3]
     assert list(summary["test_start"]) == [fold["test_start"] for fold in result.folds]
     assert summary["managed_return"].notna().all()
+
+
+def test_subperiod_statistics_partition_the_out_of_sample_track_record():
+    result = walk_forward_volatility_managed(_returns(), train_days=63, test_days=21, vol_lookback=21)
+    summary = subperiod_statistics(result, years=1)
+    assert summary["n_days"].sum() == len(result.managed_returns)
+    assert {"managed_sharpe", "unmanaged_sharpe"}.issubset(summary.columns)
 
 
 def test_ken_french_daily_parser_converts_percent_to_decimal(monkeypatch):

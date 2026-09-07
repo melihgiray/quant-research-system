@@ -21,6 +21,7 @@ import pandas as pd
 import requests
 
 from ..config import TRADING_DAYS_PER_YEAR
+from ..performance.analytics import compute_metrics
 
 
 KEN_FRENCH_FTP = "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp"
@@ -241,3 +242,37 @@ def fold_statistics(result: VolatilityManagedResult, periods: int = TRADING_DAYS
             if managed_std > 0 else float("nan"),
         })
     return pd.DataFrame(rows).set_index("fold")
+
+
+def subperiod_statistics(
+    result: VolatilityManagedResult, years: int = 10
+) -> pd.DataFrame:
+    """Compare managed and unmanaged returns in fixed calendar-year blocks.
+
+    This descriptive split is not another model-selection exercise. It makes
+    the variation hidden by the full-sample result visible and uses only the
+    already out-of-sample return stream.
+    """
+    if years < 1:
+        raise ValueError("years must be positive")
+    first_year = int(result.managed_returns.index.min().year)
+    last_year = int(result.managed_returns.index.max().year)
+    rows = []
+    for start in range(first_year, last_year + 1, years):
+        end = min(start + years - 1, last_year)
+        mask = (result.managed_returns.index.year >= start) & (result.managed_returns.index.year <= end)
+        managed = result.managed_returns.loc[mask]
+        unmanaged = result.unmanaged_returns.loc[managed.index]
+        if managed.empty:
+            continue
+        m = compute_metrics(managed)
+        u = compute_metrics(unmanaged)
+        rows.append({
+            "period": f"{start}-{end}",
+            "n_days": len(managed),
+            "unmanaged_sharpe": u["sharpe"],
+            "managed_sharpe": m["sharpe"],
+            "unmanaged_return": u["ann_return"],
+            "managed_return": m["ann_return"],
+        })
+    return pd.DataFrame(rows).set_index("period")

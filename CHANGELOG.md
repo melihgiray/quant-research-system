@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.89.0
+
+- Added calendar subperiod statistics for the volatility-managed replication to
+  show how its out-of-sample return and Sharpe differ across historical eras.
+
 ## 0.88.0
 
 - Added an optional absolute exposure cap to the volatility-managed study for

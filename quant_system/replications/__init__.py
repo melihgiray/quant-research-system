@@ -10,6 +10,7 @@ from .volatility_managed import (
     download_ken_french_daily,
     download_ken_french_daily_with_metadata,
     fold_statistics,
+    subperiod_statistics,
     inverse_variance_exposure,
     walk_forward_volatility_managed,
 )
@@ -20,6 +21,7 @@ __all__ = [
     "download_ken_french_daily",
     "download_ken_french_daily_with_metadata",
     "fold_statistics",
+    "subperiod_statistics",
     "inverse_variance_exposure",
     "walk_forward_volatility_managed",
 ]
